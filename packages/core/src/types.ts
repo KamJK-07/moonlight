@@ -1,0 +1,125 @@
+/**
+ * Domain types shared by every Worklight surface (mobile, desktop, and
+ * any future platform). Nothing platform-specific lives in this file —
+ * no React, no storage APIs, just the shape of the data.
+ */
+
+export type ID = string;
+
+/** ISO 8601 date-time string, e.g. "2026-08-31T14:03:00.000Z". */
+export type ISODateTime = string;
+
+/** Calendar date only, "YYYY-MM-DD". Used for due dates, log dates, events. */
+export type DateKey = string;
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export interface GithubIssueRef {
+  owner: string;
+  repo: string;
+  number: number;
+  url: string;
+  state: 'open' | 'closed';
+}
+
+export interface Task {
+  id: ID;
+  text: string;
+  done: boolean;
+  projectId: ID | null;
+  due: DateKey | null;
+  priority: TaskPriority;
+  githubIssue: GithubIssueRef | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export type ProjectStatus = 'active' | 'paused' | 'done';
+
+export interface Project {
+  id: ID;
+  name: string;
+  status: ProjectStatus;
+  notes: string;
+  color: string | null;
+  /** "owner/repo" — the GitHub repo this project is linked to, if any. */
+  githubRepo: string | null;
+  archived: boolean;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export interface CalendarEvent {
+  id: ID;
+  date: DateKey;
+  title: string;
+  time: string | null; // "HH:MM", 24h
+  projectId: ID | null;
+  createdAt: ISODateTime;
+}
+
+export type LogSource = 'manual' | 'github';
+
+export interface LogEntry {
+  id: ID;
+  date: DateKey;
+  text: string;
+  projectId: ID | null;
+  source: LogSource;
+  createdAt: ISODateTime;
+}
+
+export type IdeaStatus = 'raw' | 'exploring' | 'parked' | 'shipped';
+
+export interface Idea {
+  id: ID;
+  text: string;
+  tag: string | null;
+  status: IdeaStatus;
+  riff: string | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export type AccentTheme = 'amber' | 'violet' | 'teal';
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+/**
+ * Settings deliberately excludes the GitHub token. The token is a secret
+ * and lives only in each platform's secure storage (Keychain / Windows
+ * Credential Manager via Electron's safeStorage) behind the
+ * `SecureTokenStore` interface in storage.ts — never in `WorklightState`,
+ * so it can never end up in a JSON export or a synced-to-GitHub backup.
+ */
+export interface Settings {
+  themeMode: ThemeMode;
+  accent: AccentTheme;
+  githubUsername: string | null;
+  /** "owner/repo" list chosen to feed the activity feed / issue sync. */
+  linkedRepos: string[];
+}
+
+export interface WorklightState {
+  version: 1;
+  tasks: Task[];
+  projects: Project[];
+  /** Keyed by DateKey. */
+  events: Record<DateKey, CalendarEvent[]>;
+  logEntries: LogEntry[];
+  ideas: Idea[];
+  settings: Settings;
+}
+
+export interface TaskGroups {
+  overdue: Task[];
+  dueToday: Task[];
+  upcoming: Task[];
+  noDate: Task[];
+  done: Task[];
+}
+
+export interface ProjectProgress {
+  done: number;
+  total: number;
+  pct: number; // 0-100, 0 when total is 0
+}

@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.DS_Store
+
+# Expo / React Native
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+ios/
+android/
+
+# Electron
+packages/desktop/dist/
+packages/desktop/out/
+packages/desktop/release/
+
+# Env / secrets — never commit tokens
+.env
+.env.local
+*.pem
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

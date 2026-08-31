@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Fast, always-reliable gate: lint, typecheck, unit tests, and a cross-platform
+  # bundle/build smoke test for both apps. Everything in this job is exactly what
+  # was verified in the sandbox that generated this repo — it should never be flaky.
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace packages/core
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - name: Build desktop app (main + preload + renderer)
+        run: npm run build --workspace packages/desktop
+      - name: Bundle mobile app for iOS (Metro, no simulator)
+        run: npx expo export --platform ios
+        working-directory: packages/mobile
+      - name: Bundle mobile app for Android (Metro, no emulator)
+        run: npx expo export --platform android
+        working-directory: packages/mobile
+
+  # Deeper verification this sandbox can't do itself: an actual Xcode build
+  # against the iOS Simulator SDK, on a real macOS runner. This is the real
+  # pass/fail signal for "does the iOS app actually build" — see ROADMAP.md.
+  ios-build:
+    name: iOS simulator build (Xcode)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace packages/core
+      - name: Prebuild native iOS project
+        working-directory: packages/mobile
+        run: npx expo prebuild --platform ios --no-install
+      - name: Install CocoaPods dependencies
+        working-directory: packages/mobile/ios
+        run: pod install
+      - name: Build for iOS Simulator (unsigned)
+        working-directory: packages/mobile/ios
+        run: |
+          WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1)
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | awk '/Schemes:/{flag=1;next}/^ *$/{flag=0}flag' | xargs | awk '{print $1}')
+          echo "Building $SCHEME from $WORKSPACE"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+
+  # Deeper verification for the desktop side: a real Windows build on a
+  # real windows-latest runner, producing an actual portable .exe artifact.
+  windows-build:
+    name: Windows build (electron-builder)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace packages/core
+      - run: npm run typecheck --workspace packages/desktop
+      - run: npm run build --workspace packages/desktop
+      - name: Package portable Windows build
+        working-directory: packages/desktop
+        run: npx electron-builder --win portable
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moonlight-windows-portable
+          path: packages/desktop/release/*.exe
+          if-no-files-found: warn
