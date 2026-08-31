@@ -2,6 +2,7 @@
   "name": "@moonlight/desktop",
   "version": "0.1.0",
   "private": true,
+  "author": "Kameron",
   "description": "Moonlight desktop — Electron app targeting Windows (and incidentally Linux/macOS).",
   "main": "./out/main/index.js",
   "scripts": {
@@ -33,6 +34,7 @@
   "build": {
     "appId": "com.kameron.moonlight",
     "productName": "Moonlight",
+    "electronVersion": "31.7.7",
     "files": ["out/**/*"],
     "win": {
       "target": ["portable", "nsis"]
