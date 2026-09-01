@@ -43,6 +43,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode (Swift 6.2+ required by expo-modules-jsi)
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
