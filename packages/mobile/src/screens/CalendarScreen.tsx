@@ -10,7 +10,7 @@ import {
   weekDates,
   occurrencesInRange,
 } from '@moonlight/core';
-import type { GithubMilestone, EventRecurrence } from '@moonlight/core';
+import type { GithubMilestone, EventRecurrence, Task } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 import Card from '../components/Card';
@@ -95,6 +95,15 @@ export default function CalendarScreen(): React.ReactElement {
     return map;
   }, [milestonesByRepo]);
 
+  const tasksByDueDate = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const t of state.tasks) {
+      if (t.done || !t.due) continue;
+      (map[t.due] ??= []).push(t);
+    }
+    return map;
+  }, [state.tasks]);
+
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
   const monthNum = m ?? 1;
@@ -134,6 +143,7 @@ export default function CalendarScreen(): React.ReactElement {
   function dayCell(key: string, label: number) {
     const has = (expandedEvents[key]?.length ?? 0) > 0;
     const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
+    const hasTask = (tasksByDueDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
     return (
@@ -152,6 +162,7 @@ export default function CalendarScreen(): React.ReactElement {
           <View style={styles.dotsRow}>
             {has && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
             {hasMilestone && <View style={[styles.dot, { backgroundColor: theme.warning }]} />}
+            {hasTask && <View style={[styles.dot, { backgroundColor: theme.inkSoft }]} />}
           </View>
         </View>
       </TouchableOpacity>
@@ -168,6 +179,7 @@ export default function CalendarScreen(): React.ReactElement {
 
   const selectedEvents = expandedEvents[selected] ?? [];
   const selectedMilestones = milestonesByDate[selected] ?? [];
+  const selectedTasks = tasksByDueDate[selected] ?? [];
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -200,7 +212,15 @@ export default function CalendarScreen(): React.ReactElement {
             <Pill label="milestone" tone="warning" />
           </View>
         ))}
-        {selectedEvents.length === 0 && selectedMilestones.length === 0 && <Text style={{ color: theme.inkFaint }}>No events yet.</Text>}
+        {selectedTasks.map((t) => (
+          <View key={t.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
+            <Text style={{ color: theme.ink, flex: 1 }}>{t.text}</Text>
+            <Pill label="task" tone="neutral" />
+          </View>
+        ))}
+        {selectedEvents.length === 0 && selectedMilestones.length === 0 && selectedTasks.length === 0 && (
+          <Text style={{ color: theme.inkFaint }}>No events yet.</Text>
+        )}
         {selectedEvents.map((ev) => {
           const evProject = projectOf(ev.projectId);
           return (

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, addDays, weekDates, occurrencesInRange } from '@moonlight/core';
-import type { GithubMilestone, EventRecurrence } from '@moonlight/core';
+import type { GithubMilestone, EventRecurrence, Task } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 
@@ -82,6 +82,15 @@ export default function CalendarScreen(): React.ReactElement {
     return map;
   }, [milestonesByRepo]);
 
+  const tasksByDueDate = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const t of state.tasks) {
+      if (t.done || !t.due) continue;
+      (map[t.due] ??= []).push(t);
+    }
+    return map;
+  }, [state.tasks]);
+
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
   const monthNum = m ?? 1;
@@ -125,6 +134,7 @@ export default function CalendarScreen(): React.ReactElement {
   function dayCell(key: string, label: number) {
     const has = (expandedEvents[key]?.length ?? 0) > 0;
     const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
+    const hasTask = (tasksByDueDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
     return (
@@ -137,6 +147,7 @@ export default function CalendarScreen(): React.ReactElement {
         <span className="cal-dots">
           {has && <span className="cal-dot" />}
           {hasMilestone && <span className="cal-dot milestone" />}
+          {hasTask && <span className="cal-dot task" />}
         </span>
       </button>
     );
@@ -154,6 +165,7 @@ export default function CalendarScreen(): React.ReactElement {
 
   const selectedEvents = expandedEvents[selected] ?? [];
   const selectedMilestones = milestonesByDate[selected] ?? [];
+  const selectedTasks = tasksByDueDate[selected] ?? [];
 
   return (
     <div>
@@ -203,7 +215,16 @@ export default function CalendarScreen(): React.ReactElement {
               <span className="pill milestone">milestone</span>
             </li>
           ))}
-          {selectedEvents.length === 0 && selectedMilestones.length === 0 && <li className="empty">No events yet.</li>}
+          {selectedTasks.map((t) => (
+            <li key={t.id} className="row">
+              <span className="row-text">{t.text}</span>
+              <span className="tag" title="Task due date — syncs automatically">task</span>
+              {t.priority === 'high' && <span className="tag priority-high">high</span>}
+            </li>
+          ))}
+          {selectedEvents.length === 0 && selectedMilestones.length === 0 && selectedTasks.length === 0 && (
+            <li className="empty">No events yet.</li>
+          )}
           {selectedEvents.map((ev) => {
             const evProject = projectOf(ev.projectId);
             return (

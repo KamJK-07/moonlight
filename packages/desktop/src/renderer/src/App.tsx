@@ -14,7 +14,7 @@ import GithubScreen from './screens/GithubScreen';
 import SettingsScreen from './screens/Settings';
 import QuickAdd from './components/QuickAdd';
 
-export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas' | 'github' | 'settings';
+export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas' | 'github';
 
 const VIEWS: Array<{ id: ViewId; label: string }> = [
   { id: 'today', label: 'Today' },
@@ -24,7 +24,6 @@ const VIEWS: Array<{ id: ViewId; label: string }> = [
   { id: 'log', label: 'Progress log' },
   { id: 'ideas', label: 'Creative hub' },
   { id: 'github', label: 'GitHub' },
-  { id: 'settings', label: 'Settings' },
 ];
 
 const ACCENTS: Array<{ id: 'amber' | 'violet' | 'teal'; hex: string; label: string }> = [
@@ -52,6 +51,7 @@ function Shell(): React.ReactElement {
   const { state, store } = useWorklight();
   const [view, setView] = useState<ViewId>('today');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const { status: githubStatus, client: githubClient } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   useReminderPoller();
@@ -132,6 +132,9 @@ function Shell(): React.ReactElement {
               />
             ))}
           </div>
+          <button className="settings-gear" onClick={() => setShowSettings(true)} aria-label="Settings" title="Settings">
+            ⚙
+          </button>
         </div>
       </aside>
       <main className="main">
@@ -148,9 +151,19 @@ function Shell(): React.ReactElement {
         {view === 'log' && <LogScreen />}
         {view === 'ideas' && <IdeasScreen />}
         {view === 'github' && <GithubScreen />}
-        {view === 'settings' && <SettingsScreen />}
       </main>
       <QuickAdd />
+      {showSettings && (
+        <div className="settings-popout-backdrop" onClick={() => setShowSettings(false)}>
+          <div className="card settings-popout" onClick={(e) => e.stopPropagation()}>
+            <button className="btn-plain settings-popout-close" onClick={() => setShowSettings(false)} aria-label="Close settings">
+              ×
+            </button>
+            <h2 style={{ marginBottom: '1rem' }}>Settings</h2>
+            <SettingsScreen />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
