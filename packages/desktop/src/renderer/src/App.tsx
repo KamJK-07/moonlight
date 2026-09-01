@@ -26,12 +26,6 @@ const VIEWS: Array<{ id: ViewId; label: string }> = [
   { id: 'github', label: 'GitHub' },
 ];
 
-const ACCENTS: Array<{ id: 'amber' | 'violet' | 'teal'; hex: string; label: string }> = [
-  { id: 'amber', hex: '#E07B1E', label: 'Amber' },
-  { id: 'violet', hex: '#7C5CE0', label: 'Violet' },
-  { id: 'teal', hex: '#1E8F82', label: 'Teal' },
-];
-
 const TEXT_SCALE_PX: Record<TextScale, string> = {
   small: '14px',
   normal: '16px',
@@ -48,7 +42,7 @@ export default function App(): React.ReactElement {
 }
 
 function Shell(): React.ReactElement {
-  const { state, store } = useWorklight();
+  const { state } = useWorklight();
   const [view, setView] = useState<ViewId>('today');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -121,17 +115,6 @@ function Shell(): React.ReactElement {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <div className="theme-row">
-            {ACCENTS.map((a) => (
-              <button
-                key={a.id}
-                className={`swatch${state.settings.accent === a.id ? ' active' : ''}`}
-                title={a.label}
-                style={{ background: a.hex }}
-                onClick={() => store.setAccent(a.id)}
-              />
-            ))}
-          </div>
           <button className="settings-gear" onClick={() => setShowSettings(true)} aria-label="Settings" title="Settings">
             ⚙
           </button>

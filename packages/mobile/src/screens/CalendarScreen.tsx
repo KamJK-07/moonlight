@@ -162,7 +162,7 @@ export default function CalendarScreen(): React.ReactElement {
           <View style={styles.dotsRow}>
             {has && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
             {hasMilestone && <View style={[styles.dot, { backgroundColor: theme.warning }]} />}
-            {hasTask && <View style={[styles.dot, { backgroundColor: theme.inkSoft }]} />}
+            {hasTask && <View style={[styles.dot, styles.dotTask, { backgroundColor: theme.danger }]} />}
           </View>
         </View>
       </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function CalendarScreen(): React.ReactElement {
         {selectedTasks.map((t) => (
           <View key={t.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
             <Text style={{ color: theme.ink, flex: 1 }}>{t.text}</Text>
-            <Pill label="task" tone="neutral" />
+            <Pill label="task" tone="danger" />
           </View>
         ))}
         {selectedEvents.length === 0 && selectedMilestones.length === 0 && selectedTasks.length === 0 && (
@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
   cell: { flex: 1, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', margin: 1 },
   dotsRow: { position: 'absolute', bottom: 3, flexDirection: 'row', gap: 3 },
   dot: { width: 4, height: 4, borderRadius: 2 },
+  dotTask: { width: 6, height: 6, borderRadius: 3 },
   eventRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   addRow: { flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 8 },
