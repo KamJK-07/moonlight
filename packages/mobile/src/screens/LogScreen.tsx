@@ -14,11 +14,17 @@ export default function LogScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const theme = useTheme();
   const [text, setText] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   function submit() {
     if (!text.trim()) return;
-    store.addLogEntry({ text });
+    store.addLogEntry({ text, projectId });
     setText('');
+    setProjectId(null);
+  }
+
+  function projectOf(id: string | null | undefined) {
+    return id ? state.projects.find((p) => p.id === id) : undefined;
   }
 
   const sorted = sortLogEntries(state.logEntries);
@@ -34,6 +40,25 @@ export default function LogScreen(): React.ReactElement {
           onChangeText={setText}
           multiline
         />
+        {state.projects.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+            <TouchableOpacity
+              onPress={() => setProjectId(null)}
+              style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === null ? theme.accentSoft : 'transparent' }]}
+            >
+              <Text style={{ color: theme.ink, fontSize: 12 }}>No project</Text>
+            </TouchableOpacity>
+            {state.projects.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === p.id ? theme.accentSoft : 'transparent' }]}
+              >
+                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={submit}>
           <Text style={{ color: theme.accentInk, fontWeight: '600' }}>Add entry</Text>
         </TouchableOpacity>
@@ -43,16 +68,20 @@ export default function LogScreen(): React.ReactElement {
 
       {sorted.length > 0 && (
         <Card>
-          {sorted.map((e) => (
-            <View key={e.id} style={[styles.row, { borderBottomColor: theme.border }]}>
-              <Pill label={fmtShort(e.date)} />
-              <Text style={{ color: theme.ink, flex: 1, marginLeft: 8 }}>{e.text}</Text>
-              {e.source === 'github' && <Pill label="github" />}
-              <TouchableOpacity onPress={() => store.deleteLogEntry(e.id)} hitSlop={8}>
-                <Text style={{ color: theme.inkFaint, fontSize: 16, marginLeft: 6 }}>×</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+          {sorted.map((e) => {
+            const project = projectOf(e.projectId);
+            return (
+              <View key={e.id} style={[styles.row, { borderBottomColor: theme.border }]}>
+                <Pill label={fmtShort(e.date)} />
+                <Text style={{ color: theme.ink, flex: 1, marginLeft: 8 }}>{e.text}</Text>
+                {project && <Pill label={project.name} />}
+                {e.source === 'github' && <Pill label="github" />}
+                <TouchableOpacity onPress={() => store.deleteLogEntry(e.id)} hitSlop={8}>
+                  <Text style={{ color: theme.inkFaint, fontSize: 16, marginLeft: 6 }}>×</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
         </Card>
       )}
     </ScrollView>
@@ -62,6 +91,8 @@ export default function LogScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 10, minHeight: 60, marginBottom: 10, textAlignVertical: 'top' },
+  chipsScroll: { marginBottom: 10 },
+  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
 });

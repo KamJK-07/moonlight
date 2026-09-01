@@ -11,13 +11,19 @@ export default function LogScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const [text, setText] = useState('');
   const [date, setDate] = useState(todayKey());
+  const [projectId, setProjectId] = useState('');
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
-    store.addLogEntry({ text, date });
+    store.addLogEntry({ text, date, projectId: projectId || null });
     setText('');
     setDate(todayKey());
+    setProjectId('');
+  }
+
+  function projectOf(id: string | null | undefined) {
+    return id ? state.projects.find((p) => p.id === id) : undefined;
   }
 
   const sorted = sortLogEntries(state.logEntries);
@@ -36,6 +42,14 @@ export default function LogScreen(): React.ReactElement {
               required
               style={{ flex: '3 1 260px' }}
             />
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              <option value="">No project</option>
+              {state.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
             <button className="btn-accent" type="submit">
               Add entry
             </button>
@@ -48,16 +62,20 @@ export default function LogScreen(): React.ReactElement {
       ) : (
         <div className="card">
           <ul className="list">
-            {sorted.map((e) => (
-              <li key={e.id} className="row">
-                <span className="tag mono">{fmtShort(e.date)}</span>
-                <span className="row-text">{e.text}</span>
-                {e.source === 'github' && <span className="tag">github</span>}
-                <button className="btn-plain" onClick={() => store.deleteLogEntry(e.id)} aria-label="Delete entry">
-                  ×
-                </button>
-              </li>
-            ))}
+            {sorted.map((e) => {
+              const project = projectOf(e.projectId);
+              return (
+                <li key={e.id} className="row">
+                  <span className="tag mono">{fmtShort(e.date)}</span>
+                  <span className="row-text">{e.text}</span>
+                  {project && <span className="tag">{project.name}</span>}
+                  {e.source === 'github' && <span className="tag">github</span>}
+                  <button className="btn-plain" onClick={() => store.deleteLogEntry(e.id)} aria-label="Delete entry">
+                    ×
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
