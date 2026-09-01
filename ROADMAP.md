@@ -64,7 +64,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Daily freeform journal entries
 - [x] Day-streak tracking
 - [x] Quick-log from Today
-- [ ] Group entries by week/month, weekly digest view
+- [x] Group entries by week/month, weekly digest view
 - [x] Attach a log entry to a specific project — picker in the add-entry form, shown as a tag on each entry
 - [ ] Auto-entry from GitHub commits ("shipped 4 commits to moonlight")
 
@@ -73,12 +73,12 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Quick capture: text + tag
 - [x] "Ask Claude to riff" — real Anthropic API call (not a stub), on
       both platforms; needs an API key connected in Settings
-- [ ] Convert an idea → Project or Task in one tap
+- [x] Convert an idea → Project or Task in one tap
 - [x] Board view by status — kanban columns on desktop, filter chips + a
       per-idea status selector on mobile
 - [ ] Attach reference links/images
 - [x] Search/filter by tag
-- [ ] Star / archive favorites
+- [x] Star / archive favorites
 
 ## 7. GitHub
 

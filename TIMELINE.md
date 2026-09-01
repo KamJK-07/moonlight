@@ -152,4 +152,41 @@ Commits: [`66d3ee6`](https://github.com/KamJK-07/moonlight/commit/66d3ee6)
 
 ---
 
+## 2026-09-01 — Progress log weekly digest, and Ideas: star/archive/convert
+
+**What**:
+- Progress log §5: `[ ] Group entries by week/month, weekly digest view`
+  → `[x]` — new `groupLogEntriesByWeek` core selector (Monday-start
+  weeks, most recent first) and a `startOfWeek` date helper shared by
+  both platforms. Entries now render under "This week" / "Last week" /
+  date-range headers with a count, replacing the old flat list.
+- Creative hub §6: `[ ] Star / archive favorites` and
+  `[ ] Convert an idea → Project or Task in one tap` → both `[x]`.
+  `Idea` gains `starred`/`archived` booleans and two store methods.
+  Archive mirrors the Projects archive/restore pattern exactly; starred
+  ideas sort first; "→ Task" / "→ Project" buttons call the existing
+  `addTask`/`addProject` with the idea's text, then mark it `shipped`.
+
+**How**: Two more independent background agents (disjoint files: Log
+screens + a shared selector vs. Idea-related core fields + Ideas
+screens). The idea-work agent was briefed to read the Ideas screens'
+current state carefully first, since they'd already been through two
+prior rounds of changes (status board, then tag search) in this same
+session — it composed cleanly with both rather than reverting anything.
+Reviewed by hand: verified the week-bucketing correctly relies on
+`sortLogEntries`' date-primary sort (so same-week entries are always
+contiguous — a `Sunday` edge case is covered by a dedicated test), and
+that the star/archive/convert additions don't touch the recently-added
+kanban/status-filter/tag-search logic beyond composing with it.
+
+**Verified**: `lint`, `typecheck`, `test` (43/43), desktop build, and
+`expo export --platform ios` all clean, run after combining both
+agents' changes.
+
+Commits: [`18d7579`](https://github.com/KamJK-07/moonlight/commit/18d7579)
+(weekly digest), [`d0d8d4f`](https://github.com/KamJK-07/moonlight/commit/d0d8d4f)
+(idea star/archive/convert).
+
+---
+
 <!-- New entries append below this line. -->
