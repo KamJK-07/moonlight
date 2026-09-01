@@ -119,6 +119,8 @@ export interface Settings {
   githubUsername: string | null;
   /** "owner/repo" list chosen to feed the activity feed / issue sync. */
   linkedRepos: string[];
+  /** ISO timestamp of the last time the user viewed GitHub activity; null means never viewed. */
+  githubActivitySeenAt: string | null;
 }
 
 export interface WorklightState {

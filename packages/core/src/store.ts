@@ -365,6 +365,10 @@ export class WorklightStore {
     this.set({ ...this.state, settings: { ...this.state.settings, githubUsername } });
   }
 
+  setGithubActivitySeenAt(timestamp: string): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, githubActivitySeenAt: timestamp } });
+  }
+
   /** Used by import — replaces everything at once. */
   replaceState(next: WorklightState): void {
     this.set(next);

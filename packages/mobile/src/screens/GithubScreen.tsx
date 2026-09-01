@@ -50,6 +50,7 @@ export default function GithubScreen(): React.ReactElement {
     setActivityLoading(true);
     try {
       setActivity(await client.fetchActivityFeed(state.settings.linkedRepos));
+      store.setGithubActivitySeenAt(new Date().toISOString());
     } finally {
       setActivityLoading(false);
     }

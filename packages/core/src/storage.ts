@@ -116,6 +116,7 @@ export function createInitialState(): WorklightState {
       accent: 'amber',
       githubUsername: null,
       linkedRepos: [],
+      githubActivitySeenAt: null,
     },
   };
 }
