@@ -8,6 +8,7 @@ import TodayScreen from '../screens/TodayScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import TasksScreen from '../screens/TasksScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
+import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import MoreScreen from '../screens/MoreScreen';
 import LogScreen from '../screens/LogScreen';
 import IdeasScreen from '../screens/IdeasScreen';
@@ -30,8 +31,30 @@ export type MoreStackParamList = {
   Settings: undefined;
 };
 
+export type ProjectsStackParamList = {
+  ProjectsHome: undefined;
+  ProjectDetail: { projectId: string };
+};
+
 const Tab = createBottomTabNavigator<TabParamList>();
 const MoreStack = createNativeStackNavigator<MoreStackParamList>();
+const ProjectsStack = createNativeStackNavigator<ProjectsStackParamList>();
+
+function ProjectsStackNavigator(): React.ReactElement {
+  const theme = useTheme();
+  return (
+    <ProjectsStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: theme.surface },
+        headerTintColor: theme.ink,
+        headerShadowVisible: false,
+      }}
+    >
+      <ProjectsStack.Screen name="ProjectsHome" component={ProjectsScreen} options={{ title: 'Projects' }} />
+      <ProjectsStack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: 'Project' }} />
+    </ProjectsStack.Navigator>
+  );
+}
 
 function MoreStackNavigator(): React.ReactElement {
   const theme = useTheme();
@@ -82,7 +105,7 @@ export default function RootNavigator(): React.ReactElement {
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Calendar" component={CalendarScreen} />
         <Tab.Screen name="Tasks" component={TasksScreen} />
-        <Tab.Screen name="Projects" component={ProjectsScreen} />
+        <Tab.Screen name="Projects" component={ProjectsStackNavigator} options={{ headerShown: false }} />
         <Tab.Screen name="More" component={MoreStackNavigator} options={{ headerShown: false }} />
       </Tab.Navigator>
     </NavigationContainer>

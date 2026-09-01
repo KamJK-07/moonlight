@@ -1,12 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { projectProgress, PROJECT_COLORS } from '@moonlight/core';
 import type { ProjectStatus } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 
-export default function ProjectsScreen(): React.ReactElement {
+export default function ProjectsScreen({
+  onSelectProject,
+}: {
+  onSelectProject: (id: string) => void;
+}): React.ReactElement {
   const { state, store } = useWorklight();
   const [name, setName] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
+  const { status: githubStatus, client: githubClient } = useGithub();
+  const [prCounts, setPrCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (githubStatus !== 'connected' || !githubClient) return;
+    const repos = Array.from(
+      new Set(state.projects.filter((p) => !p.archived && p.githubRepo).map((p) => p.githubRepo as string)),
+    );
+    if (repos.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      repos.map((repo) =>
+        githubClient
+          .listPullRequests(repo, 'open')
+          .then((prs) => [repo, prs.length] as const)
+          .catch(() => [repo, 0] as const),
+      ),
+    ).then((entries) => {
+      if (!cancelled) setPrCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubStatus, githubClient, state.projects]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +87,21 @@ export default function ProjectsScreen(): React.ReactElement {
                       style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: p.color, flexShrink: 0 }}
                     />
                   )}
-                  {p.name}
+                  <button
+                    type="button"
+                    onClick={() => onSelectProject(p.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      font: 'inherit',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {p.name}
+                  </button>
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <button
@@ -76,6 +119,11 @@ export default function ProjectsScreen(): React.ReactElement {
               <div>
                 <span className={`pill ${p.status}`}>{p.status}</span>
                 {p.githubRepo && <span className="tag mono" style={{ marginLeft: '0.4rem' }}>{p.githubRepo}</span>}
+                {p.githubRepo && (prCounts[p.githubRepo] ?? 0) > 0 && (
+                  <span className="pill open" style={{ marginLeft: '0.4rem' }}>
+                    {prCounts[p.githubRepo]} PR{prCounts[p.githubRepo] === 1 ? '' : 's'}
+                  </span>
+                )}
               </div>
               <div className="theme-row">
                 <button

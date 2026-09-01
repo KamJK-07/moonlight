@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import type { GithubActivityItem } from '@moonlight/core';
 import { WorklightProvider, useWorklight } from './store/WorklightContext';
+import { useGithub } from './store/useGithub';
 import TodayScreen from './screens/Today';
 import CalendarScreen from './screens/Calendar';
 import TasksScreen from './screens/Tasks';
 import ProjectsScreen from './screens/Projects';
+import ProjectDetail from './screens/ProjectDetail';
 import LogScreen from './screens/Log';
 import IdeasScreen from './screens/Ideas';
 import GithubScreen from './screens/GithubScreen';
@@ -39,6 +42,9 @@ export default function App(): React.ReactElement {
 function Shell(): React.ReactElement {
   const { state, store } = useWorklight();
   const [view, setView] = useState<ViewId>('today');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { status: githubStatus, client: githubClient } = useGithub();
+  const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
   useEffect(() => {
     document.body.dataset.accent = state.settings.accent;
@@ -46,6 +52,26 @@ function Shell(): React.ReactElement {
     if (state.settings.themeMode === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', state.settings.themeMode);
   }, [state.settings.accent, state.settings.themeMode]);
+
+  useEffect(() => {
+    if (view !== 'projects') setSelectedProjectId(null);
+  }, [view]);
+
+  useEffect(() => {
+    if (githubStatus === 'connected' && githubClient && state.settings.linkedRepos.length > 0) {
+      void githubClient
+        .fetchActivityFeed(state.settings.linkedRepos)
+        .then(setGithubActivity)
+        .catch(() => setGithubActivity([]));
+    }
+  }, [githubStatus, githubClient, state.settings.linkedRepos]);
+
+  const hasNewGithubActivity =
+    githubStatus === 'connected' &&
+    state.settings.linkedRepos.length > 0 &&
+    (githubActivity ?? []).some(
+      (item) => state.settings.githubActivitySeenAt === null || item.date > state.settings.githubActivitySeenAt,
+    );
 
   const openTasks = state.tasks.filter((t) => !t.done).length;
   const activeProjects = state.projects.filter((p) => p.status === 'active' && !p.archived).length;
@@ -65,7 +91,20 @@ function Shell(): React.ReactElement {
               className={`nav-item${view === v.id ? ' active' : ''}`}
               onClick={() => setView(v.id)}
             >
-              <span>{v.label}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {v.label}
+                {v.id === 'github' && hasNewGithubActivity ? (
+                  <span
+                    style={{
+                      width: '0.4rem',
+                      height: '0.4rem',
+                      borderRadius: '50%',
+                      background: 'var(--accent)',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : null}
+              </span>
               {counts[v.id] ? <span className="nav-count">{counts[v.id]}</span> : null}
             </button>
           ))}
@@ -89,7 +128,12 @@ function Shell(): React.ReactElement {
         {view === 'today' && <TodayScreen onNavigate={setView} />}
         {view === 'calendar' && <CalendarScreen />}
         {view === 'tasks' && <TasksScreen />}
-        {view === 'projects' && <ProjectsScreen />}
+        {view === 'projects' &&
+          (selectedProjectId ? (
+            <ProjectDetail projectId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
+          ) : (
+            <ProjectsScreen onSelectProject={setSelectedProjectId} />
+          ))}
         {view === 'log' && <LogScreen />}
         {view === 'ideas' && <IdeasScreen />}
         {view === 'github' && <GithubScreen />}

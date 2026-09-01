@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { projectProgress, PROJECT_COLORS } from '@moonlight/core';
 import type { ProjectStatus } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
+import type { ProjectsStackParamList } from '../navigation/RootNavigator';
 import Card from '../components/Card';
 import Pill from '../components/Pill';
 
@@ -13,11 +16,37 @@ const STATUS_TONE: Record<ProjectStatus, 'success' | 'warning' | 'neutral'> = {
   done: 'neutral',
 };
 
-export default function ProjectsScreen(): React.ReactElement {
+type Props = NativeStackScreenProps<ProjectsStackParamList, 'ProjectsHome'>;
+
+export default function ProjectsScreen({ navigation }: Props): React.ReactElement {
   const { state, store } = useWorklight();
   const theme = useTheme();
   const [name, setName] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
+  const { status: githubStatus, client: githubClient } = useGithub();
+  const [prCounts, setPrCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (githubStatus !== 'connected' || !githubClient) return;
+    const repos = Array.from(
+      new Set(state.projects.filter((p) => !p.archived && p.githubRepo).map((p) => p.githubRepo as string)),
+    );
+    if (repos.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      repos.map((repo) =>
+        githubClient
+          .listPullRequests(repo, 'open')
+          .then((prs) => [repo, prs.length] as const)
+          .catch(() => [repo, 0] as const),
+      ),
+    ).then((entries) => {
+      if (!cancelled) setPrCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubStatus, githubClient, state.projects]);
 
   function submit() {
     if (!name.trim()) return;
@@ -63,10 +92,13 @@ export default function ProjectsScreen(): React.ReactElement {
         return (
           <Card key={p.id}>
             <View style={styles.headRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}
+                onPress={() => navigation.navigate('ProjectDetail', { projectId: p.id })}
+              >
                 {p.color && <View style={[styles.colorDot, { backgroundColor: p.color }]} />}
                 <Text style={[styles.name, { color: theme.ink }]}>{p.name}</Text>
-              </View>
+              </TouchableOpacity>
               <View style={{ flexDirection: 'row', gap: 14 }}>
                 <TouchableOpacity onPress={() => store.updateProject(p.id, { archived: true })} hitSlop={8}>
                   <Text style={{ color: theme.inkFaint, fontSize: 12 }}>Archive</Text>
@@ -79,6 +111,9 @@ export default function ProjectsScreen(): React.ReactElement {
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
               <Pill label={p.status} tone={STATUS_TONE[p.status]} />
               {p.githubRepo && <Pill label={p.githubRepo} />}
+              {p.githubRepo && (prCounts[p.githubRepo] ?? 0) > 0 && (
+                <Pill label={`${prCounts[p.githubRepo]} PR${prCounts[p.githubRepo] === 1 ? '' : 's'}`} tone="accent" />
+              )}
             </View>
             <View style={styles.colorRow}>
               <TouchableOpacity
