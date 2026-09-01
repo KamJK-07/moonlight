@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { sortIdeasByRecency } from '@moonlight/core';
+import type { Idea, IdeaStatus } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
+
+const STATUSES: IdeaStatus[] = ['raw', 'exploring', 'parked', 'shipped'];
+const STATUS_LABEL: Record<IdeaStatus, string> = {
+  raw: 'Raw',
+  exploring: 'Exploring',
+  parked: 'Parked',
+  shipped: 'Shipped',
+};
 
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
@@ -40,6 +49,56 @@ export default function IdeasScreen(): React.ReactElement {
 
   const sorted = sortIdeasByRecency(state.ideas);
 
+  function renderIdea(idea: Idea) {
+    return (
+      <div key={idea.id} className="card">
+        <div className="row" style={{ border: 'none', padding: 0 }}>
+          <span className="row-text">{idea.text}</span>
+          {idea.tag && <span className="tag">{idea.tag}</span>}
+          <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
+            ×
+          </button>
+        </div>
+        <select
+          value={idea.status}
+          onChange={(e) => store.setIdeaStatus(idea.id, e.target.value as IdeaStatus)}
+          style={{ marginTop: '0.5rem' }}
+        >
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+        {idea.riff && (
+          <div className="idea-riff" style={{ marginTop: '0.5rem' }}>
+            <span className="l">Claude riffed</span>
+            {idea.riff}
+          </div>
+        )}
+        {riffing === idea.id ? null : hasKey ? (
+          <div style={{ marginTop: '0.5rem' }}>
+            <button className="btn-plain" onClick={() => riff(idea.id)}>
+              {idea.riff ? 'Riff again' : 'Ask Claude to riff'}
+            </button>
+            {riffError && riffing === null && (
+              <span className="tag" style={{ marginLeft: '0.5rem', color: 'var(--danger)' }}>
+                {riffError}
+              </span>
+            )}
+          </div>
+        ) : null}
+        {riffing === idea.id && (
+          <div style={{ marginTop: '0.5rem' }}>
+            <button className="btn-plain" disabled>
+              Thinking…
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       {hasKey === false && (
@@ -77,42 +136,21 @@ export default function IdeasScreen(): React.ReactElement {
 
       {sorted.length === 0 && <p className="empty">No ideas yet. Drop one above.</p>}
 
-      {sorted.map((idea) => (
-        <div key={idea.id} className="card">
-          <div className="row" style={{ border: 'none', padding: 0 }}>
-            <span className="row-text">{idea.text}</span>
-            {idea.tag && <span className="tag">{idea.tag}</span>}
-            <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
-              ×
-            </button>
-          </div>
-          {idea.riff && (
-            <div className="idea-riff" style={{ marginTop: '0.5rem' }}>
-              <span className="l">Claude riffed</span>
-              {idea.riff}
-            </div>
-          )}
-          {riffing === idea.id ? null : hasKey ? (
-            <div style={{ marginTop: '0.5rem' }}>
-              <button className="btn-plain" onClick={() => riff(idea.id)}>
-                {idea.riff ? 'Riff again' : 'Ask Claude to riff'}
-              </button>
-              {riffError && riffing === null && (
-                <span className="tag" style={{ marginLeft: '0.5rem', color: 'var(--danger)' }}>
-                  {riffError}
-                </span>
-              )}
-            </div>
-          ) : null}
-          {riffing === idea.id && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <button className="btn-plain" disabled>
-                Thinking…
-              </button>
-            </div>
-          )}
+      {sorted.length > 0 && (
+        <div className="idea-board">
+          {STATUSES.map((s) => {
+            const ideas = sorted.filter((idea) => idea.status === s);
+            return (
+              <div key={s} className="idea-column">
+                <div className="group-label">
+                  {STATUS_LABEL[s]} ({ideas.length})
+                </div>
+                {ideas.map(renderIdea)}
+              </div>
+            );
+          })}
         </div>
-      ))}
+      )}
     </div>
   );
 }

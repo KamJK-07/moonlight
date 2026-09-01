@@ -239,6 +239,11 @@ button:disabled { opacity: 0.55; cursor: default; }
 .idea-riff { background: var(--surface-2); border-left: 2px solid var(--accent); padding: 0.55rem 0.7rem; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: var(--ink-soft); }
 .idea-riff .l { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 0.2rem; }
 
+.idea-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; align-items: start; }
+.idea-column { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem; display: flex; flex-direction: column; gap: 0.6rem; min-height: 80px; }
+.idea-column .group-label { margin: 0; }
+.idea-column .card { margin-bottom: 0; }
+
 .gh-status { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .gh-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--ink-faint); }
 .gh-dot.connected { background: var(--success); }

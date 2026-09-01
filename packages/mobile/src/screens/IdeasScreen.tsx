@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { sortIdeasByRecency, AnthropicClient, AnthropicApiError, buildRiffPrompt } from '@moonlight/core';
+import type { IdeaStatus } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { anthropicSecretStore } from '../store/secureStore';
 import Card from '../components/Card';
+
+const STATUSES: IdeaStatus[] = ['raw', 'exploring', 'parked', 'shipped'];
+const FILTERS: Array<IdeaStatus | 'all'> = ['all', ...STATUSES];
 
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
@@ -13,6 +17,7 @@ export default function IdeasScreen(): React.ReactElement {
   const [riffing, setRiffing] = useState<string | null>(null);
   const [riffError, setRiffError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [filter, setFilter] = useState<IdeaStatus | 'all'>('all');
 
   useEffect(() => {
     void anthropicSecretStore.has().then(setHasKey);
@@ -47,7 +52,7 @@ export default function IdeasScreen(): React.ReactElement {
     }
   }
 
-  const sorted = sortIdeasByRecency(state.ideas);
+  const sorted = sortIdeasByRecency(state.ideas).filter((idea) => filter === 'all' || idea.status === filter);
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -58,6 +63,18 @@ export default function IdeasScreen(): React.ReactElement {
           </Text>
         </Card>
       )}
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f}
+            onPress={() => setFilter(f)}
+            style={[styles.chip, { borderColor: theme.border, backgroundColor: filter === f ? theme.accentSoft : 'transparent' }]}
+          >
+            <Text style={{ color: theme.ink, fontSize: 12 }}>{f}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <Card>
         <TextInput
@@ -80,7 +97,11 @@ export default function IdeasScreen(): React.ReactElement {
         </TouchableOpacity>
       </Card>
 
-      {sorted.length === 0 && <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>No ideas yet. Drop one above.</Text>}
+      {sorted.length === 0 && (
+        <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>
+          {state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas with this status.'}
+        </Text>
+      )}
 
       {sorted.map((idea) => (
         <Card key={idea.id}>
@@ -91,6 +112,17 @@ export default function IdeasScreen(): React.ReactElement {
             </TouchableOpacity>
           </View>
           {idea.tag && <Text style={{ color: theme.inkFaint, fontSize: 11, marginBottom: 4 }}>{idea.tag}</Text>}
+          <View style={styles.chipsRow}>
+            {STATUSES.map((s) => (
+              <TouchableOpacity
+                key={s}
+                onPress={() => store.setIdeaStatus(idea.id, s)}
+                style={[styles.chip, { borderColor: theme.border, backgroundColor: idea.status === s ? theme.accentSoft : 'transparent' }]}
+              >
+                <Text style={{ color: theme.ink, fontSize: 12 }}>{s}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           {idea.riff && (
             <View style={[styles.riff, { backgroundColor: theme.surface2, borderColor: theme.accent }]}>
               <Text style={{ color: theme.inkFaint, fontSize: 10, marginBottom: 3, letterSpacing: 0.4 }}>CLAUDE RIFFED</Text>
@@ -120,4 +152,7 @@ const styles = StyleSheet.create({
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   ideaHead: { flexDirection: 'row', alignItems: 'flex-start' },
   riff: { borderRadius: 8, borderLeftWidth: 2, padding: 10, marginTop: 6 },
+  chipsScroll: { marginBottom: 10 },
+  chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
+  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
 });
