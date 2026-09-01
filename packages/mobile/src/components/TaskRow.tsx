@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import type { Task, Project } from '@moonlight/core';
 import { todayKey } from '@moonlight/core';
 import { useTheme } from '../store/WorklightContext';
@@ -40,6 +41,35 @@ export default function TaskRow({
   const [subtaskText, setSubtaskText] = useState('');
   const subtasks = task.subtasks ?? [];
   const doneCount = subtasks.filter((s) => s.done).length;
+  const swipeableRef = useRef<Swipeable>(null);
+
+  function renderCompleteAction(): React.ReactElement {
+    return (
+      <TouchableOpacity
+        style={[styles.action, { backgroundColor: theme.success }]}
+        onPress={() => {
+          swipeableRef.current?.close();
+          onToggle(task.id, !task.done);
+        }}
+      >
+        <Text style={styles.actionText}>{task.done ? 'Undo' : 'Complete'}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  function renderDeleteAction(): React.ReactElement {
+    return (
+      <TouchableOpacity
+        style={[styles.action, { backgroundColor: theme.danger }]}
+        onPress={() => {
+          swipeableRef.current?.close();
+          onDelete(task.id);
+        }}
+      >
+        <Text style={styles.actionText}>Delete</Text>
+      </TouchableOpacity>
+    );
+  }
 
   let dueTone: 'accent' | 'danger' | 'neutral' = 'neutral';
   if (task.due && !task.done) {
@@ -55,63 +85,87 @@ export default function TaskRow({
 
   return (
     <View style={[styles.container, { borderBottomColor: theme.border }]}>
-      <View style={styles.row}>
-        <TouchableOpacity
-          onPress={() => onToggle(task.id, !task.done)}
-          style={[
-            styles.checkbox,
-            { borderColor: task.done ? theme.accent : theme.border, backgroundColor: task.done ? theme.accent : 'transparent' },
-          ]}
-        />
-        <Text
-          style={[styles.text, { color: task.done ? theme.inkFaint : theme.ink, textDecorationLine: task.done ? 'line-through' : 'none' }]}
-          numberOfLines={2}
-        >
-          {task.text}
-        </Text>
-        <View style={styles.tags}>
-          {subtasks.length > 0 && <Pill label={`${doneCount}/${subtasks.length}`} tone={doneCount === subtasks.length ? 'success' : 'neutral'} />}
-          {task.priority === 'high' && !task.done && <Pill label="high" tone="danger" />}
-          {project && <Pill label={project.name} />}
-          {task.due && <Pill label={fmtShort(task.due)} tone={dueTone} />}
-        </View>
-        <TouchableOpacity onPress={() => setExpanded((e) => !e)} hitSlop={8}>
-          <Text style={[styles.chevron, { color: theme.inkFaint }]}>{expanded ? '▾' : '▸'}</Text>
-        </TouchableOpacity>
-        {onCreateIssue && !task.githubIssue && (
-          <TouchableOpacity onPress={() => onCreateIssue(task.id)} hitSlop={8}>
-            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Issue</Text>
+      <Swipeable
+        ref={swipeableRef}
+        renderLeftActions={renderCompleteAction}
+        renderRightActions={renderDeleteAction}
+        onSwipeableOpen={(direction) => {
+          swipeableRef.current?.close();
+          if (direction === 'left') onToggle(task.id, !task.done);
+          else onDelete(task.id);
+        }}
+      >
+        <View style={[styles.row, { backgroundColor: theme.surface }]}>
+          <TouchableOpacity
+            onPress={() => onToggle(task.id, !task.done)}
+            style={[
+              styles.checkbox,
+              { borderColor: task.done ? theme.accent : theme.border, backgroundColor: task.done ? theme.accent : 'transparent' },
+            ]}
+          />
+          <Text
+            style={[styles.text, { color: task.done ? theme.inkFaint : theme.ink, textDecorationLine: task.done ? 'line-through' : 'none' }]}
+            numberOfLines={2}
+          >
+            {task.text}
+          </Text>
+          <View style={styles.tags}>
+            {subtasks.length > 0 && <Pill label={`${doneCount}/${subtasks.length}`} tone={doneCount === subtasks.length ? 'success' : 'neutral'} />}
+            {task.priority === 'high' && !task.done && <Pill label="high" tone="danger" />}
+            {project && <Pill label={project.name} />}
+            {task.due && <Pill label={fmtShort(task.due)} tone={dueTone} />}
+          </View>
+          <TouchableOpacity onPress={() => setExpanded((e) => !e)} hitSlop={8}>
+            <Text style={[styles.chevron, { color: theme.inkFaint }]}>{expanded ? '▾' : '▸'}</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity onPress={() => onDelete(task.id)} hitSlop={8}>
-          <Text style={[styles.delete, { color: theme.inkFaint }]}>×</Text>
-        </TouchableOpacity>
-      </View>
+          {onCreateIssue && !task.githubIssue && (
+            <TouchableOpacity onPress={() => onCreateIssue(task.id)} hitSlop={8}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Issue</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => onDelete(task.id)} hitSlop={8}>
+            <Text style={[styles.delete, { color: theme.inkFaint }]}>×</Text>
+          </TouchableOpacity>
+        </View>
+      </Swipeable>
 
       {expanded && (
         <View style={styles.subtasks}>
           {subtasks.map((s) => (
-            <View key={s.id} style={[styles.subtaskRow, { borderBottomColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={() => onToggleSubtask(task.id, s.id, !s.done)}
-                style={[
-                  styles.subtaskCheckbox,
-                  { borderColor: s.done ? theme.accent : theme.border, backgroundColor: s.done ? theme.accent : 'transparent' },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.subtaskText,
-                  { color: s.done ? theme.inkFaint : theme.ink, textDecorationLine: s.done ? 'line-through' : 'none' },
-                ]}
-                numberOfLines={2}
-              >
-                {s.text}
-              </Text>
-              <TouchableOpacity onPress={() => onDeleteSubtask(task.id, s.id)} hitSlop={8}>
-                <Text style={[styles.delete, { color: theme.inkFaint }]}>×</Text>
-              </TouchableOpacity>
-            </View>
+            <Swipeable
+              key={s.id}
+              renderRightActions={() => (
+                <TouchableOpacity
+                  style={[styles.action, { backgroundColor: theme.danger }]}
+                  onPress={() => onDeleteSubtask(task.id, s.id)}
+                >
+                  <Text style={styles.actionText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+              onSwipeableOpen={() => onDeleteSubtask(task.id, s.id)}
+            >
+              <View style={[styles.subtaskRow, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
+                <TouchableOpacity
+                  onPress={() => onToggleSubtask(task.id, s.id, !s.done)}
+                  style={[
+                    styles.subtaskCheckbox,
+                    { borderColor: s.done ? theme.accent : theme.border, backgroundColor: s.done ? theme.accent : 'transparent' },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.subtaskText,
+                    { color: s.done ? theme.inkFaint : theme.ink, textDecorationLine: s.done ? 'line-through' : 'none' },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {s.text}
+                </Text>
+                <TouchableOpacity onPress={() => onDeleteSubtask(task.id, s.id)} hitSlop={8}>
+                  <Text style={[styles.delete, { color: theme.inkFaint }]}>×</Text>
+                </TouchableOpacity>
+              </View>
+            </Swipeable>
           ))}
           <TextInput
             style={[styles.subtaskInput, { borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
@@ -141,4 +195,6 @@ const styles = StyleSheet.create({
   subtaskCheckbox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1.5 },
   subtaskText: { flex: 1, fontSize: 13 },
   subtaskInput: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, fontSize: 13, marginTop: 6 },
+  action: { width: 76, justifyContent: 'center', alignItems: 'center' },
+  actionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
 });
