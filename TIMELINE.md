@@ -189,4 +189,35 @@ Commits: [`18d7579`](https://github.com/KamJK-07/moonlight/commit/18d7579)
 
 ---
 
+## 2026-09-01 — Polish pass over the session's mobile UI work
+
+**What**: A dedicated cleanup pass over everything shipped in this
+session's feature rounds (Projects color/repo/archive → idea
+star/archive/convert), not a new feature. Fixed the one known nit
+(mobile Calendar's project-chip row rendered below the Add button
+instead of above it — reordered, no logic change) and extracted a
+`Chip` component (`packages/mobile/src/components/Chip.tsx`) for the
+selectable-chip pattern that had been copy-pasted verbatim across four
+screens (Tasks, Log, Calendar, Ideas) as each feature round added its
+own picker. Net effect: same behavior, less code.
+
+**How**: One more background agent, explicitly scoped to polish only —
+briefed on the full commit range (`feca42e..HEAD`) and told not to
+touch `packages/core`, not to rename anything exported, and to only
+make changes it could justify as "strictly better, same behavior."
+It also considered and declined a couple of consolidations (e.g. the
+`chipsScroll` container's per-screen margin differences) as legitimate
+per-screen variation rather than duplication worth collapsing —
+included in this log because "declined to over-consolidate" is as much
+a polish-pass outcome as "extracted a component."
+
+**Verified**: reviewed the new `Chip` component and all 11 call-site
+conversions by hand (each is a 1:1 behavior-preserving swap), then
+independently re-ran `lint`, `typecheck`, `test` (43/43), desktop
+build, and `expo export --platform ios` — all clean.
+
+Commit: [`bdd08d4`](https://github.com/KamJK-07/moonlight/commit/bdd08d4).
+
+---
+
 <!-- New entries append below this line. -->
