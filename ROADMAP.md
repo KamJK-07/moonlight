@@ -19,7 +19,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] "On deck" — merged overdue + due-today task list, one tap to complete
 - [x] Today's calendar events at a glance
 - [x] Quick progress-log capture inline, no tab switch
-- [ ] GitHub activity snippet (latest commit/PR today)
+- [x] GitHub activity snippet (latest commit/PR today)
 - [ ] Global quick-add (task/event/log/idea from one button, any screen)
 
 ## 2. Calendar
@@ -76,7 +76,9 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Convert an idea → Project or Task in one tap
 - [x] Board view by status — kanban columns on desktop, filter chips + a
       per-idea status selector on mobile
-- [ ] Attach reference links/images
+- [x] Attach reference links — `Idea.links: string[]`; image attachment
+      is a separate, larger scope (file picker + storage design) and
+      isn't started
 - [x] Search/filter by tag
 - [x] Star / archive favorites
 

@@ -220,4 +220,40 @@ Commit: [`bdd08d4`](https://github.com/KamJK-07/moonlight/commit/bdd08d4).
 
 ---
 
+## 2026-09-01 — Today: GitHub activity snippet, and Ideas: reference links
+
+**What**:
+- Today §1: `[ ] GitHub activity snippet (latest commit/PR today)` →
+  `[x]` — a card that only appears when GitHub is connected and at
+  least one repo is linked, showing a one-line summary ("2 commits,
+  1 PR today") plus up to 5 items, reusing the exact
+  `fetchActivityFeed`/`Pill`/row idiom `GithubScreen.tsx` already uses.
+- Creative hub §6: `[ ] Attach reference links/images` → `[x]` for the
+  **links** half only. `Idea` gains `links: string[]` and
+  `addIdeaLink`/`removeIdeaLink`. Image attachment was deliberately
+  scoped out — it needs a file/image picker and a binary storage
+  design, a meaningfully larger and riskier lift than a plain string
+  array. Worth splitting into its own roadmap line if picked up later.
+
+**How**: Two more independent background agents (Today screens vs.
+Idea-related core + Ideas screens). The links agent found existing,
+unused precedent for opening external links safely — desktop's Electron
+main process already has a `setWindowOpenHandler` whose own comment
+anticipated exactly this ("a GitHub PR URL" opening in the real
+browser) — and used it instead of inventing new IPC plumbing. Reviewed
+by hand (in particular checked the commit/PR pill-class fallback in the
+Today snippet matches `GithubScreen.tsx`'s existing, slightly-odd
+"commits render with the 'open' pill style" behavior rather than being
+a new inconsistency), then re-verified independently on the combined
+tree.
+
+**Verified**: `lint`, `typecheck`, `test` (47/47), desktop build, and
+`expo export --platform ios` all clean.
+
+Commits: [`21353be`](https://github.com/KamJK-07/moonlight/commit/21353be)
+(Today GitHub snippet), [`98ee56e`](https://github.com/KamJK-07/moonlight/commit/98ee56e)
+(idea reference links).
+
+---
+
 <!-- New entries append below this line. -->
