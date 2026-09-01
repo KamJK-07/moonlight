@@ -89,4 +89,38 @@ work from the previous entry that hadn't been checked off yet).
 
 ---
 
+## 2026-09-01 — Calendar and Progress log: project pickers
+
+**What**: Two more `[~]` roadmap items closed out:
+- Calendar §2: `[~] Project-linked events` → `[x]` — a project picker in
+  the add-event form on both platforms, shown as a tag/pill on each
+  event row.
+- Progress log §5: `[~] Attach a log entry to a specific project` →
+  `[x]` — same pattern, add-entry form + tag/pill on each entry.
+
+Neither needed core changes — `store.addEvent`/`store.addLogEntry`
+already accepted `projectId`; this was purely wiring existing store
+capability into a picker UI, the same shape as the earlier Projects
+color/repo/archive work.
+
+**How**: Two more independent background agents, dispatched in parallel
+(disjoint files: Calendar screens vs. Log screens). Each reused this
+app's existing picker idioms (desktop `<select>`, mobile chip row) by
+being pointed at the established examples rather than inventing new UI.
+Reviewed by hand, then re-verified independently on the combined tree.
+
+**Verified**: `lint`, `typecheck`, `test` (37/37), desktop build, and
+`expo export --platform ios` all clean, run after combining both agents'
+changes.
+
+Commits: [`6f672d8`](https://github.com/KamJK-07/moonlight/commit/6f672d8)
+(log picker), [`1fd0e8a`](https://github.com/KamJK-07/moonlight/commit/1fd0e8a)
+(calendar picker).
+
+**Noted for a later polish pass**: on mobile, the calendar's project-chip
+row renders below the Add button instead of above it — works correctly,
+just a slightly odd visual order.
+
+---
+
 <!-- New entries append below this line. -->

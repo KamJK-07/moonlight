@@ -30,7 +30,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [ ] Week view toggle
 - [ ] Recurring events (daily/weekly/monthly)
 - [ ] Local notification reminders for upcoming events
-- [~] Project-linked events — `CalendarEvent.projectId` exists; no picker in the add-event form yet
+- [x] Project-linked events — picker in the add-event form, shown as a tag on each event
 - [ ] GitHub milestones surfaced on the calendar
 
 ## 3. Tasks
@@ -65,7 +65,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Day-streak tracking
 - [x] Quick-log from Today
 - [ ] Group entries by week/month, weekly digest view
-- [~] Attach a log entry to a specific project — `projectId` field exists; no picker in the form
+- [x] Attach a log entry to a specific project — picker in the add-entry form, shown as a tag on each entry
 - [ ] Auto-entry from GitHub commits ("shipped 4 commits to moonlight")
 
 ## 6. Creative hub (ideas)
