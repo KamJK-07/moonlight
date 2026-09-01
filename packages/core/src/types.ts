@@ -36,6 +36,18 @@ export interface Task {
 
 export type ProjectStatus = 'active' | 'paused' | 'done';
 
+/** Fixed palette for `Project.color` — identical hex values on both platforms. */
+export const PROJECT_COLORS = [
+  '#E4572E',
+  '#F2A93B',
+  '#3E8F5C',
+  '#1E8F82',
+  '#3B7DD8',
+  '#7C5CE0',
+  '#D8548C',
+  '#6E7E72',
+] as const;
+
 export interface Project {
   id: ID;
   name: string;

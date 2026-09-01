@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { projectProgress } from '@moonlight/core';
+import { projectProgress, PROJECT_COLORS } from '@moonlight/core';
 import type { ProjectStatus } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 
@@ -17,6 +17,8 @@ export default function ProjectsScreen(): React.ReactElement {
   }
 
   const visible = state.projects.filter((p) => !p.archived);
+  const archived = state.projects.filter((p) => p.archived);
+  const repos = state.settings.linkedRepos;
 
   return (
     <div>
@@ -50,15 +52,63 @@ export default function ProjectsScreen(): React.ReactElement {
           return (
             <div key={p.id} className="project-card">
               <div className="project-card-head">
-                <h4>{p.name}</h4>
-                <button className="btn-plain" onClick={() => store.deleteProject(p.id)} aria-label="Delete project">
-                  ×
-                </button>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  {p.color && (
+                    <span
+                      style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: p.color, flexShrink: 0 }}
+                    />
+                  )}
+                  {p.name}
+                </h4>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <button
+                    className="btn-plain"
+                    onClick={() => store.updateProject(p.id, { archived: true })}
+                    aria-label="Archive project"
+                  >
+                    Archive
+                  </button>
+                  <button className="btn-plain" onClick={() => store.deleteProject(p.id)} aria-label="Delete project">
+                    ×
+                  </button>
+                </div>
               </div>
               <div>
                 <span className={`pill ${p.status}`}>{p.status}</span>
                 {p.githubRepo && <span className="tag mono" style={{ marginLeft: '0.4rem' }}>{p.githubRepo}</span>}
               </div>
+              <div className="theme-row">
+                <button
+                  type="button"
+                  className={`swatch${!p.color ? ' active' : ''}`}
+                  style={{ background: 'var(--surface-2)' }}
+                  onClick={() => store.updateProject(p.id, { color: null })}
+                  aria-label="No color"
+                />
+                {PROJECT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`swatch${p.color === c ? ' active' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => store.updateProject(p.id, { color: c })}
+                    aria-label={`Color ${c}`}
+                  />
+                ))}
+              </div>
+              {repos.length > 0 && (
+                <select
+                  value={p.githubRepo ?? ''}
+                  onChange={(e) => store.updateProject(p.id, { githubRepo: e.target.value || null })}
+                >
+                  <option value="">No repo linked</option>
+                  {repos.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              )}
               {progress.total > 0 ? (
                 <div>
                   <div className="progress-track">
@@ -83,6 +133,25 @@ export default function ProjectsScreen(): React.ReactElement {
           );
         })}
       </div>
+
+      {archived.length > 0 && (
+        <div>
+          <div className="group-label">Archived ({archived.length})</div>
+          <ul className="list">
+            {archived.map((p) => (
+              <li key={p.id} className="row">
+                <span className="row-text">{p.name}</span>
+                <button className="btn-plain" onClick={() => store.updateProject(p.id, { archived: false })}>
+                  Restore
+                </button>
+                <button className="btn-plain" onClick={() => store.deleteProject(p.id)} aria-label="Delete project">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
