@@ -40,11 +40,14 @@ jobs:
   # pass/fail signal for "does the iOS app actually build" — see ROADMAP.md.
   ios-build:
     name: iOS simulator build (Xcode)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode (Swift 6.2+ required by expo-modules-jsi)
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+      # Xcode 26.0-26.3's Swift 6.2.x rejects expo-modules-jsi's RuntimeScheduler
+      # SWIFT_RETURNS_RETAINED annotations as a hard compiler error, fixed in
+      # 26.4+: https://github.com/expo/expo/issues/49426
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
