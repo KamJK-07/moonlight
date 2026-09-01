@@ -99,9 +99,10 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Theme: light / dark / system + 3 accent themes (amber, violet, teal)
 - [x] Data export / import (JSON backup — native save/open dialogs on
       desktop, share sheet + paste-to-import on mobile)
-- [ ] Cross-device sync via the private GitHub repo (app data as JSON,
-      committed on change, pulled on launch) — no custom backend needed;
-      genuinely not started
+- [x] Cross-device sync via a dedicated GitHub repo (app data as JSON) —
+      manual "Sync now" in Settings, not automatic on launch/change;
+      whole-state last-write-wins by timestamp, not a field-level
+      merge, always confirmed before any overwrite in either direction
 - [x] Notification preferences — on/off + minutes-before lead time for
       calendar events (in the Reminders card, Settings)
 - [~] Accessibility — desktop respects `prefers-reduced-motion`; dynamic

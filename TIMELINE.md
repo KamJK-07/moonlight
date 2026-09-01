@@ -461,4 +461,69 @@ Commits: [`30e3ad9`](https://github.com/KamJK-07/moonlight/commit/30e3ad9)
 
 ---
 
+## 2026-09-01 — Cross-device sync via a dedicated GitHub repo
+
+**What**: Settings §8, `[ ] Cross-device sync via the private GitHub
+repo` → `[x]` — the last big-ticket item, and the one with the most at
+stake: this app holds real personal data (tasks, journal entries,
+ideas), so anything that can overwrite it needed to be handled with
+more care than a typical UI feature.
+
+**Scope decision**: implemented as a manual "Sync now" button, not
+automatic sync on launch or on every change (the roadmap line's
+literal wording). Automatically syncing a whole app-state blob on
+every mutation risks silently clobbering data on conflict without a
+real merge strategy — this pass's comparison is "whichever side has
+the newer overall timestamp wins wholesale," not a field-level merge,
+which is fine for a manual, always-confirmed action but not safe to
+run unattended in the background. That's an honest, deliberate
+narrowing of scope, not an oversight.
+
+**How**: Designed the protocol myself before delegating anything —
+this was the one place this session where getting the architecture
+right up front mattered more than usual, because the failure mode
+(silent data loss) isn't something a typical review catches after the
+fact if the design itself is wrong. Two things were resolved directly
+rather than left to the implementing agent:
+1. **Portability**: neither `btoa`/`atob` nor a `TextEncoder`
+   polyfill exist in this app's React Native/Hermes runtime (confirmed
+   by grepping `node_modules` and finding nothing) — needed for
+   base64-encoding file content for GitHub's Contents API. Added
+   `base64-js` (pure JS, operates on plain `Uint8Array`, zero
+   environment dependency) as `packages/core`'s first-ever runtime
+   dependency, and hand-wrote a UTF-8-safe encode/decode pair around
+   it, smoke-tested myself across ASCII/emoji/CJK/astral-plane-surrogate-
+   pair/control-character strings *before* handing the verified
+   algorithm to the implementing agent verbatim — landed as its own
+   commit, dependency-only, so CI could confirm it independently.
+2. **The confirmation invariant**: every push (local → remote) and
+   every pull (remote → local) must be gated behind the user
+   explicitly confirming that specific action, with the dialog naming
+   what gets overwritten — no exceptions, no automatic path. Wrote
+   this as the literal first line of the agent's brief.
+
+The resulting implementation: a pure `planSync(local, remote)` decision
+function (`push`/`pull`/`noop`, based on comparing each side's freshest
+record timestamp), `GithubClient.getFileContent`/`putFileContent`
+(handles the "file doesn't exist yet" 404 case and GitHub's
+base64-with-embedded-newlines response format), and a "Cross-device
+sync" Settings card with a repo input (deliberately separate from
+`linkedRepos` — this is meant to be a dedicated, typically-private data
+repo) and the "Sync now" button.
+
+**Verified**: this got the deepest review of anything this session.
+Beyond the usual `lint`/`typecheck`/`test`/build/export pass, traced
+every reachable code path on both platforms by hand — confirmed
+`putFileContent` is only ever invoked from inside the push confirm
+dialog's affirmative button, and `store.replaceState` only from the
+pull confirm dialog's affirmative button, with no other call sites and
+no path (deserialize failure, noop, network error) that reaches either
+without that gate. Also independently re-verified `base64.ts` is
+byte-for-byte the pre-tested algorithm, not a paraphrase.
+
+Commit: [`61b5d91`](https://github.com/KamJK-07/moonlight/commit/61b5d91).
+Dependency setup: [`e39d3bd`](https://github.com/KamJK-07/moonlight/commit/e39d3bd).
+
+---
+
 <!-- New entries append below this line. -->
