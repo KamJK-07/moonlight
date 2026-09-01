@@ -26,6 +26,11 @@ export default function CalendarScreen(): React.ReactElement {
   const [selected, setSelected] = useState(today);
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
+  const [projectId, setProjectId] = useState('');
+
+  function projectOf(id: string | null) {
+    return id ? state.projects.find((p) => p.id === id) : undefined;
+  }
 
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
@@ -49,9 +54,10 @@ export default function CalendarScreen(): React.ReactElement {
   function submitEvent(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    store.addEvent({ date: selected, title, time: time || null });
+    store.addEvent({ date: selected, title, time: time || null, projectId: projectId || null });
     setTitle('');
     setTime('');
+    setProjectId('');
   }
 
   const cells: React.ReactElement[] = [];
@@ -112,15 +118,19 @@ export default function CalendarScreen(): React.ReactElement {
         </div>
         <ul className="list">
           {selectedEvents.length === 0 && <li className="empty">No events yet.</li>}
-          {selectedEvents.map((ev) => (
-            <li key={ev.id} className="row">
-              <span className="row-text">{ev.title}</span>
-              {ev.time && <span className="tag mono">{ev.time}</span>}
-              <button className="btn-plain" onClick={() => store.deleteEvent(selected, ev.id)} aria-label="Delete event">
-                ×
-              </button>
-            </li>
-          ))}
+          {selectedEvents.map((ev) => {
+            const evProject = projectOf(ev.projectId);
+            return (
+              <li key={ev.id} className="row">
+                <span className="row-text">{ev.title}</span>
+                {evProject && <span className="tag">{evProject.name}</span>}
+                {ev.time && <span className="tag mono">{ev.time}</span>}
+                <button className="btn-plain" onClick={() => store.deleteEvent(selected, ev.id)} aria-label="Delete event">
+                  ×
+                </button>
+              </li>
+            );
+          })}
         </ul>
         <form onSubmit={submitEvent} style={{ marginTop: '0.6rem' }}>
           <div className="form-row" style={{ marginBottom: 0 }}>
@@ -132,6 +142,14 @@ export default function CalendarScreen(): React.ReactElement {
               required
             />
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              <option value="">No project</option>
+              {state.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
             <button className="btn-accent" type="submit">
               Add
             </button>

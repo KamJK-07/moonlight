@@ -10,6 +10,7 @@ import {
 } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
+import Pill from '../components/Pill';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const CELL_WIDTH = `${100 / 7}%`;
@@ -35,6 +36,11 @@ export default function CalendarScreen(): React.ReactElement {
   const [selected, setSelected] = useState(today);
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  function projectOf(id: string | null) {
+    return id ? state.projects.find((p) => p.id === id) : undefined;
+  }
 
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
@@ -52,9 +58,10 @@ export default function CalendarScreen(): React.ReactElement {
 
   function submitEvent() {
     if (!title.trim()) return;
-    store.addEvent({ date: selected, title, time: time || null });
+    store.addEvent({ date: selected, title, time: time || null, projectId });
     setTitle('');
     setTime('');
+    setProjectId(null);
   }
 
   const cells: React.ReactElement[] = [];
@@ -107,15 +114,19 @@ export default function CalendarScreen(): React.ReactElement {
       <Card>
         <Text style={{ color: theme.inkSoft, fontSize: 12, marginBottom: 8 }}>{fmtLong(selected)}</Text>
         {selectedEvents.length === 0 && <Text style={{ color: theme.inkFaint }}>No events yet.</Text>}
-        {selectedEvents.map((ev) => (
-          <View key={ev.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
-            <Text style={{ color: theme.ink, flex: 1 }}>{ev.title}</Text>
-            {ev.time && <Text style={{ color: theme.inkFaint, fontSize: 12, marginRight: 8 }}>{ev.time}</Text>}
-            <TouchableOpacity onPress={() => store.deleteEvent(selected, ev.id)} hitSlop={8}>
-              <Text style={{ color: theme.inkFaint, fontSize: 16 }}>×</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+        {selectedEvents.map((ev) => {
+          const evProject = projectOf(ev.projectId);
+          return (
+            <View key={ev.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
+              <Text style={{ color: theme.ink, flex: 1 }}>{ev.title}</Text>
+              {evProject && <Pill label={evProject.name} />}
+              {ev.time && <Text style={{ color: theme.inkFaint, fontSize: 12, marginHorizontal: 8 }}>{ev.time}</Text>}
+              <TouchableOpacity onPress={() => store.deleteEvent(selected, ev.id)} hitSlop={8}>
+                <Text style={{ color: theme.inkFaint, fontSize: 16 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
         <View style={styles.addRow}>
           <TextInput
             style={[styles.input, { flex: 2, borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
@@ -135,6 +146,25 @@ export default function CalendarScreen(): React.ReactElement {
             <Text style={{ color: theme.accentInk, fontWeight: '600' }}>Add</Text>
           </TouchableOpacity>
         </View>
+        {state.projects.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+            <TouchableOpacity
+              onPress={() => setProjectId(null)}
+              style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === null ? theme.accentSoft : 'transparent' }]}
+            >
+              <Text style={{ color: theme.ink, fontSize: 12 }}>No project</Text>
+            </TouchableOpacity>
+            {state.projects.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => setProjectId(p.id)}
+                style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === p.id ? theme.accentSoft : 'transparent' }]}
+              >
+                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </Card>
     </ScrollView>
   );
@@ -152,4 +182,6 @@ const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 8 },
   addButton: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  chipsScroll: { marginTop: 8 },
+  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
 });
