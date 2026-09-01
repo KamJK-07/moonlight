@@ -304,6 +304,37 @@ Commits: [`8770563`](https://github.com/KamJK-07/moonlight/commit/8770563)
 (calendar week view), [`9cfd2e8`](https://github.com/KamJK-07/moonlight/commit/9cfd2e8)
 (GitHub activity badge).
 
+All three CI jobs passed on this push, including the real native iOS
+Xcode build against the restructured navigation — the strongest
+available confirmation the mobile stack change is sound.
+
+---
+
+## 2026-09-01 — Two-way GitHub Issue sync for tasks
+
+**What**: Tasks §3 / GitHub §7's shared line, `[~] Link task ↔ GitHub
+Issue`, → `[x]`. Completing a task with a linked Issue now closes the
+real Issue (reopens on undo); a new "→ Issue" action on tasks whose
+project has a linked repo pushes them out as a new Issue. Both
+directions were already partially there (import-as-task existed); this
+closes the loop.
+
+**How**: One more agent, explicitly scoped to avoid duplicating the
+close/reopen logic across TaskRow's 10 render call sites — briefed to
+extract one shared `useTaskGithubSync()` hook per platform instead, used
+only on the main Tasks screen (Today and Project-detail's task rows
+intentionally left untouched, out of scope). The sync call is
+fire-and-forget with errors swallowed, so a network hiccup or
+disconnected GitHub never blocks the local toggle — consistent with how
+this app treats GitHub everywhere else as an enhancement, never a
+dependency.
+
+**Verified**: reviewed the new hook (identical on both platforms) and
+every call-site change by hand, then `lint`, `typecheck`, `test`
+(47/47), desktop build, and `expo export --platform ios` all clean.
+
+Commit: [`6c56039`](https://github.com/KamJK-07/moonlight/commit/6c56039).
+
 ---
 
 <!-- New entries append below this line. -->

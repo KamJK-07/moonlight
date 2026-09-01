@@ -42,10 +42,9 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Search & filter
 - [x] Subtasks / checklist within a task
 - [ ] Push notification reminders
-- [~] Link task ↔ GitHub Issue — importing an open Issue as a task works
-      (stores the `githubIssue` ref); it isn't yet *two-way* — completing
-      the task doesn't close the Issue, and a task created in-app doesn't
-      auto-create one
+- [x] Link task ↔ GitHub Issue — two-way: completing a linked task
+      closes the Issue (and reopens it on undo), and a "→ Issue" action
+      pushes a task with no linked Issue out as a new one
 - [ ] Swipe gestures on mobile (complete / delete) — currently tap-to-toggle
 
 ## 4. Projects
@@ -88,7 +87,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Repo picker
 - [x] Recent commit/PR/issue activity feed
 - [x] Create a new Issue directly from the app (both platforms)
-- [~] Task ↔ Issue sync — see Tasks section above; import direction works
+- [x] Task ↔ Issue sync — see Tasks section above, now two-way
 - [x] PR status indicators surfaced on linked projects
 - [x] New-activity badge since last visit
 
