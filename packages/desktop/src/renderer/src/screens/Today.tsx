@@ -64,6 +64,9 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
               project={projectOf(t.projectId)}
               onToggle={(id, done) => store.toggleTask(id, done)}
               onDelete={(id) => store.deleteTask(id)}
+              onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
+              onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
+              onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
             />
           ))}
         </ul>

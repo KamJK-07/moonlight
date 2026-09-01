@@ -22,6 +22,12 @@ export interface GithubIssueRef {
   state: 'open' | 'closed';
 }
 
+export interface Subtask {
+  id: ID;
+  text: string;
+  done: boolean;
+}
+
 export interface Task {
   id: ID;
   text: string;
@@ -30,6 +36,7 @@ export interface Task {
   due: DateKey | null;
   priority: TaskPriority;
   githubIssue: GithubIssueRef | null;
+  subtasks: Subtask[];
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }

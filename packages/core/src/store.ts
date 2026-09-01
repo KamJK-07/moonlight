@@ -1,6 +1,7 @@
 import type {
   WorklightState,
   Task,
+  Subtask,
   TaskPriority,
   Project,
   ProjectStatus,
@@ -100,6 +101,7 @@ export class WorklightStore {
       due: input.due ?? null,
       priority: input.priority ?? 'medium',
       githubIssue: null,
+      subtasks: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -127,6 +129,51 @@ export class WorklightStore {
 
   deleteTask(id: string): void {
     this.set({ ...this.state, tasks: this.state.tasks.filter((t) => t.id !== id) });
+  }
+
+  addSubtask(taskId: string, text: string): void {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const now = new Date().toISOString();
+    const subtask: Subtask = { id: generateId(), text: trimmed, done: false };
+    this.set({
+      ...this.state,
+      tasks: this.state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, subtasks: [...(t.subtasks ?? []), subtask], updatedAt: now }
+          : t,
+      ),
+    });
+  }
+
+  toggleSubtask(taskId: string, subtaskId: string, done?: boolean): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      tasks: this.state.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              subtasks: (t.subtasks ?? []).map((s) =>
+                s.id === subtaskId ? { ...s, done: done ?? !s.done } : s,
+              ),
+              updatedAt: now,
+            }
+          : t,
+      ),
+    });
+  }
+
+  deleteSubtask(taskId: string, subtaskId: string): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      tasks: this.state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, subtasks: (t.subtasks ?? []).filter((s) => s.id !== subtaskId), updatedAt: now }
+          : t,
+      ),
+    });
   }
 
   // ---------- projects ----------

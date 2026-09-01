@@ -10,6 +10,7 @@ function makeTask(overrides: Partial<Task>): Task {
     due: null,
     priority: 'medium',
     githubIssue: null,
+    subtasks: [],
     createdAt: '2026-08-30T00:00:00.000Z',
     updatedAt: '2026-08-30T00:00:00.000Z',
     ...overrides,

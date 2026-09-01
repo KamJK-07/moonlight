@@ -203,6 +203,11 @@ button:disabled { opacity: 0.55; cursor: default; }
 .group-label:first-child { margin-top: 0; }
 .empty { color: var(--ink-faint); font-size: 0.85rem; padding: 0.4rem 0.15rem; }
 
+.subtask-panel { padding: 0 0 0.5rem 1.7rem; }
+.subtask-list { gap: 0.1rem; margin-bottom: 0.35rem; }
+.subtask-row { padding: 0.3rem 0.15rem; font-size: 0.85rem; }
+.subtask-add input { width: 100%; font-size: 0.85rem; padding: 0.35rem 0.6rem; }
+
 .pill { font-family: var(--font-mono); font-size: 0.64rem; padding: 0.14rem 0.5rem; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.03em; }
 .pill.active { background: var(--success-soft); color: var(--success); }
 .pill.paused { background: var(--warning-soft); color: var(--warning); }

@@ -40,6 +40,86 @@ describe('WorklightStore — tasks', () => {
   });
 });
 
+describe('WorklightStore — subtasks', () => {
+  it('adds a subtask and notifies subscribers exactly once', () => {
+    const { store } = freshStore();
+    const task = store.addTask({ text: 'Parent task' });
+    const listener = jest.fn();
+    store.subscribe(listener);
+    store.addSubtask(task.id, '  Do the thing  ');
+    expect(listener).toHaveBeenCalledTimes(1);
+    const subtasks = store.getState().tasks.find((t) => t.id === task.id)?.subtasks;
+    expect(subtasks).toHaveLength(1);
+    expect(subtasks?.[0]?.text).toBe('Do the thing'); // trimmed
+    expect(subtasks?.[0]?.done).toBe(false);
+  });
+
+  it('does not add a subtask when text is empty after trim', () => {
+    const { store } = freshStore();
+    const task = store.addTask({ text: 'Parent task' });
+    store.addSubtask(task.id, '   ');
+    expect(store.getState().tasks.find((t) => t.id === task.id)?.subtasks).toHaveLength(0);
+  });
+
+  it('toggling a subtask flips done and is idempotent under explicit value', () => {
+    const { store } = freshStore();
+    const task = store.addTask({ text: 'Parent task' });
+    store.addSubtask(task.id, 'Sub A');
+    const subtaskId = store.getState().tasks.find((t) => t.id === task.id)!.subtasks[0]!.id;
+
+    store.toggleSubtask(task.id, subtaskId, true);
+    expect(
+      store.getState().tasks.find((t) => t.id === task.id)?.subtasks.find((s) => s.id === subtaskId)
+        ?.done,
+    ).toBe(true);
+    store.toggleSubtask(task.id, subtaskId, true);
+    expect(
+      store.getState().tasks.find((t) => t.id === task.id)?.subtasks.find((s) => s.id === subtaskId)
+        ?.done,
+    ).toBe(true);
+    store.toggleSubtask(task.id, subtaskId); // no explicit value → flips
+    expect(
+      store.getState().tasks.find((t) => t.id === task.id)?.subtasks.find((s) => s.id === subtaskId)
+        ?.done,
+    ).toBe(false);
+  });
+
+  it('deleting a subtask removes exactly that subtask', () => {
+    const { store } = freshStore();
+    const task = store.addTask({ text: 'Parent task' });
+    store.addSubtask(task.id, 'keep');
+    store.addSubtask(task.id, 'remove');
+    const subtasks = store.getState().tasks.find((t) => t.id === task.id)!.subtasks;
+    const keep = subtasks[0]!;
+    const remove = subtasks[1]!;
+    store.deleteSubtask(task.id, remove.id);
+    const ids = store.getState().tasks.find((t) => t.id === task.id)!.subtasks.map((s) => s.id);
+    expect(ids).toContain(keep.id);
+    expect(ids).not.toContain(remove.id);
+  });
+
+  it('does not throw when operating on a task with no subtasks array at all (old persisted data)', () => {
+    const { store } = freshStore();
+    const task = store.addTask({ text: 'Legacy task' });
+    const state = store.getState();
+    // Simulate pre-migration data that predates the `subtasks` field.
+    const legacyTask = { ...state.tasks.find((t) => t.id === task.id) } as Record<string, unknown>;
+    delete legacyTask.subtasks;
+    store.replaceState({
+      ...state,
+      tasks: state.tasks.map((t) => (t.id === task.id ? (legacyTask as unknown as typeof t) : t)),
+    });
+
+    expect(() => store.addSubtask(task.id, 'first')).not.toThrow();
+    const afterAdd = store.getState().tasks.find((t) => t.id === task.id)?.subtasks;
+    expect(afterAdd).toHaveLength(1);
+    const subtaskId = afterAdd![0]!.id;
+
+    expect(() => store.toggleSubtask(task.id, subtaskId, true)).not.toThrow();
+    expect(() => store.deleteSubtask(task.id, subtaskId)).not.toThrow();
+  });
+});
+
 describe('WorklightStore — projects', () => {
   it('deleting a project unlinks its tasks instead of deleting them', () => {
     const { store } = freshStore();
