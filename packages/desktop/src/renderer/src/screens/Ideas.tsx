@@ -48,18 +48,50 @@ export default function IdeasScreen(): React.ReactElement {
     }
   }
 
-  const sorted = sortIdeasByRecency(state.ideas).filter(
-    (idea) => !tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase())
-  );
+  const active = state.ideas.filter((idea) => !idea.archived);
+  const archived = state.ideas.filter((idea) => idea.archived);
+
+  const sorted = sortIdeasByRecency(active)
+    .filter((idea) => !tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase()))
+    .sort((a, b) => Number(b.starred) - Number(a.starred));
+
+  function convertToTask(idea: Idea) {
+    store.addTask({ text: idea.text });
+    store.setIdeaStatus(idea.id, 'shipped');
+  }
+
+  function convertToProject(idea: Idea) {
+    store.addProject({ name: idea.text });
+    store.setIdeaStatus(idea.id, 'shipped');
+  }
 
   function renderIdea(idea: Idea) {
     return (
       <div key={idea.id} className="card">
         <div className="row" style={{ border: 'none', padding: 0 }}>
+          <button
+            className="btn-plain"
+            onClick={() => store.toggleIdeaStar(idea.id)}
+            aria-label={idea.starred ? 'Unstar idea' : 'Star idea'}
+            style={{ color: idea.starred ? 'var(--accent)' : 'var(--ink-faint)' }}
+          >
+            {idea.starred ? '★' : '☆'}
+          </button>
           <span className="row-text">{idea.text}</span>
           {idea.tag && <span className="tag">{idea.tag}</span>}
+          <button className="btn-plain" onClick={() => store.setIdeaArchived(idea.id, true)} aria-label="Archive idea">
+            Archive
+          </button>
           <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
             ×
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.6rem', margin: '0.4rem 0' }}>
+          <button className="btn-plain" onClick={() => convertToTask(idea)}>
+            → Task
+          </button>
+          <button className="btn-plain" onClick={() => convertToProject(idea)}>
+            → Project
           </button>
         </div>
         <select
@@ -137,7 +169,7 @@ export default function IdeasScreen(): React.ReactElement {
         </form>
       </div>
 
-      {state.ideas.length > 0 && (
+      {active.length > 0 && (
         <input
           type="text"
           placeholder="Search by tag…"
@@ -148,7 +180,7 @@ export default function IdeasScreen(): React.ReactElement {
       )}
 
       {sorted.length === 0 && (
-        <p className="empty">{state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your search.'}</p>
+        <p className="empty">{active.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your search.'}</p>
       )}
 
       {sorted.length > 0 && (
@@ -164,6 +196,25 @@ export default function IdeasScreen(): React.ReactElement {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {archived.length > 0 && (
+        <div>
+          <div className="group-label">Archived ({archived.length})</div>
+          <ul className="list">
+            {archived.map((idea) => (
+              <li key={idea.id} className="row">
+                <span className="row-text">{idea.text}</span>
+                <button className="btn-plain" onClick={() => store.setIdeaArchived(idea.id, false)}>
+                  Restore
+                </button>
+                <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

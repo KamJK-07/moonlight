@@ -273,6 +273,8 @@ export class WorklightStore {
       tag: input.tag?.trim() || null,
       status: 'raw',
       riff: null,
+      starred: false,
+      archived: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -293,6 +295,24 @@ export class WorklightStore {
     this.set({
       ...this.state,
       ideas: this.state.ideas.map((i) => (i.id === id ? { ...i, status, updatedAt: now } : i)),
+    });
+  }
+
+  toggleIdeaStar(id: string, starred?: boolean): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) =>
+        i.id === id ? { ...i, starred: starred ?? !i.starred, updatedAt: now } : i,
+      ),
+    });
+  }
+
+  setIdeaArchived(id: string, archived: boolean): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) => (i.id === id ? { ...i, archived, updatedAt: now } : i)),
     });
   }
 

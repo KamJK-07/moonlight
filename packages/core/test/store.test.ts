@@ -134,6 +134,41 @@ describe('WorklightStore — projects', () => {
   });
 });
 
+describe('WorklightStore — ideas', () => {
+  it('toggling a star flips starred and is idempotent under explicit value', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Star me' });
+    expect(idea.starred).toBe(false);
+
+    store.toggleIdeaStar(idea.id, true);
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.starred).toBe(true);
+    store.toggleIdeaStar(idea.id, true);
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.starred).toBe(true);
+    store.toggleIdeaStar(idea.id); // no explicit value → flips
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.starred).toBe(false);
+  });
+
+  it('toggling a star notifies subscribers exactly once', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Notify me' });
+    const listener = jest.fn();
+    store.subscribe(listener);
+    store.toggleIdeaStar(idea.id);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('archiving and restoring an idea sets archived accordingly', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Archive me' });
+    expect(idea.archived).toBe(false);
+
+    store.setIdeaArchived(idea.id, true);
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.archived).toBe(true);
+    store.setIdeaArchived(idea.id, false);
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.archived).toBe(false);
+  });
+});
+
 describe('WorklightStore — calendar events', () => {
   it('adds and removes events under the right date key without disturbing other dates', () => {
     const { store } = freshStore();

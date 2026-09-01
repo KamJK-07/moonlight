@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { sortIdeasByRecency, AnthropicClient, AnthropicApiError, buildRiffPrompt } from '@moonlight/core';
-import type { IdeaStatus } from '@moonlight/core';
+import type { Idea, IdeaStatus } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { anthropicSecretStore } from '../store/secureStore';
 import Card from '../components/Card';
@@ -53,11 +53,26 @@ export default function IdeasScreen(): React.ReactElement {
     }
   }
 
-  const sorted = sortIdeasByRecency(state.ideas).filter(
-    (idea) =>
-      (filter === 'all' || idea.status === filter) &&
-      (!tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase()))
-  );
+  const active = state.ideas.filter((idea) => !idea.archived);
+  const archived = state.ideas.filter((idea) => idea.archived);
+
+  const sorted = sortIdeasByRecency(active)
+    .filter(
+      (idea) =>
+        (filter === 'all' || idea.status === filter) &&
+        (!tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase()))
+    )
+    .sort((a, b) => Number(b.starred) - Number(a.starred));
+
+  function convertToTask(idea: Idea) {
+    store.addTask({ text: idea.text });
+    store.setIdeaStatus(idea.id, 'shipped');
+  }
+
+  function convertToProject(idea: Idea) {
+    store.addProject({ name: idea.text });
+    store.setIdeaStatus(idea.id, 'shipped');
+  }
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -112,14 +127,22 @@ export default function IdeasScreen(): React.ReactElement {
 
       {sorted.length === 0 && (
         <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>
-          {state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your filters.'}
+          {active.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your filters.'}
         </Text>
       )}
 
       {sorted.map((idea) => (
         <Card key={idea.id}>
           <View style={styles.ideaHead}>
+            <TouchableOpacity onPress={() => store.toggleIdeaStar(idea.id)} hitSlop={8}>
+              <Text style={{ color: idea.starred ? theme.accent : theme.inkFaint, fontSize: 16, marginRight: 6 }}>
+                {idea.starred ? '★' : '☆'}
+              </Text>
+            </TouchableOpacity>
             <Text style={{ color: theme.ink, flex: 1 }}>{idea.text}</Text>
+            <TouchableOpacity onPress={() => store.setIdeaArchived(idea.id, true)} hitSlop={8} style={{ marginRight: 14 }}>
+              <Text style={{ color: theme.inkFaint, fontSize: 12 }}>Archive</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => store.deleteIdea(idea.id)} hitSlop={8}>
               <Text style={{ color: theme.inkFaint, fontSize: 18 }}>×</Text>
             </TouchableOpacity>
@@ -135,6 +158,14 @@ export default function IdeasScreen(): React.ReactElement {
                 <Text style={{ color: theme.ink, fontSize: 12 }}>{s}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+          <View style={styles.chipsRow}>
+            <TouchableOpacity onPress={() => convertToTask(idea)}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Task</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => convertToProject(idea)} style={{ marginLeft: 14 }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Project</Text>
+            </TouchableOpacity>
           </View>
           {idea.riff && (
             <View style={[styles.riff, { backgroundColor: theme.surface2, borderColor: theme.accent }]}>
@@ -154,6 +185,23 @@ export default function IdeasScreen(): React.ReactElement {
           )}
         </Card>
       ))}
+
+      {archived.length > 0 && (
+        <View style={styles.archivedSection}>
+          <Text style={[styles.archivedLabel, { color: theme.inkFaint }]}>Archived ({archived.length})</Text>
+          {archived.map((idea) => (
+            <View key={idea.id} style={[styles.archivedRow, { borderColor: theme.border }]}>
+              <Text style={{ color: theme.inkSoft, flex: 1 }}>{idea.text}</Text>
+              <TouchableOpacity onPress={() => store.setIdeaArchived(idea.id, false)} hitSlop={8}>
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>Restore</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => store.deleteIdea(idea.id)} hitSlop={8} style={{ marginLeft: 14 }}>
+                <Text style={{ color: theme.inkFaint, fontSize: 16 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -168,4 +216,7 @@ const styles = StyleSheet.create({
   chipsScroll: { marginBottom: 10 },
   chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
   chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
+  archivedSection: { marginTop: 8 },
+  archivedLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6, paddingHorizontal: 4 },
+  archivedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderBottomWidth: StyleSheet.hairlineWidth },
 });

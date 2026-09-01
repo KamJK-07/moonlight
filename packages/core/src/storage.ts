@@ -104,6 +104,8 @@ export function createInitialState(): WorklightState {
         tag: 'meta',
         status: 'raw',
         riff: null,
+        starred: false,
+        archived: false,
         createdAt: now,
         updatedAt: now,
       },
