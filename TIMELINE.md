@@ -123,4 +123,33 @@ just a slightly odd visual order.
 
 ---
 
+## 2026-09-01 — Tasks: search & filter, and Ideas: search/filter by tag
+
+**What**:
+- Tasks §3: `[ ] Search & filter` → `[x]` — a text search (substring on
+  task text) plus a project filter, applied before `groupTasks` so the
+  existing grouped-section rendering and empty state keep working
+  unchanged on the filtered subset.
+- Creative hub §6: `[ ] Search/filter by tag` → `[x]` — a tag search
+  that composes with the status filter/board view added in the previous
+  entry (an idea must match both to show).
+
+**How**: Two more independent background agents, dispatched in parallel
+against disjoint files (Tasks screens vs. Ideas screens — the Ideas
+agent was explicitly briefed on the just-landed status-filter/kanban
+work so it composed with it instead of clobbering it). Reviewed by
+hand — in particular double-checked the Tasks empty-state logic
+(`sections.filter(([, arr]) => arr.length > 0)`, unchanged by this diff)
+still fires correctly when a filter zeroes out every group — then
+re-verified independently on the combined tree.
+
+**Verified**: `lint`, `typecheck`, `test` (37/37), desktop build, and
+`expo export --platform ios` all clean.
+
+Commits: [`66d3ee6`](https://github.com/KamJK-07/moonlight/commit/66d3ee6)
+(Tasks search/filter), [`d32a29f`](https://github.com/KamJK-07/moonlight/commit/d32a29f)
+(Ideas tag search).
+
+---
+
 <!-- New entries append below this line. -->

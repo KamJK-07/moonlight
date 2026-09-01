@@ -39,7 +39,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Complete/uncomplete, delete
 - [x] Grouped view: overdue / today / upcoming / no date / done
 - [x] Priority levels with visual indicator
-- [ ] Search & filter
+- [x] Search & filter
 - [x] Subtasks / checklist within a task
 - [ ] Push notification reminders
 - [~] Link task ↔ GitHub Issue — importing an open Issue as a task works
@@ -77,7 +77,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Board view by status — kanban columns on desktop, filter chips + a
       per-idea status selector on mobile
 - [ ] Attach reference links/images
-- [ ] Search/filter by tag
+- [x] Search/filter by tag
 - [ ] Star / archive favorites
 
 ## 7. GitHub
