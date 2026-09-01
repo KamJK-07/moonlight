@@ -10,6 +10,8 @@ export default function TasksScreen(): React.ReactElement {
   const [projectId, setProjectId] = useState('');
   const [due, setDue] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [search, setSearch] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState('');
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
@@ -24,7 +26,13 @@ export default function TasksScreen(): React.ReactElement {
     setPriority('medium');
   }
 
-  const groups = groupTasks(state.tasks);
+  const filteredTasks = state.tasks.filter((t) => {
+    if (search.trim() && !t.text.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    if (filterProjectId && t.projectId !== filterProjectId) return false;
+    return true;
+  });
+
+  const groups = groupTasks(filteredTasks);
 
   function renderGroup(label: string, tasks: typeof groups.overdue) {
     if (tasks.length === 0) return null;
@@ -82,6 +90,25 @@ export default function TasksScreen(): React.ReactElement {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="card">
+        <div className="form-row">
+          <input
+            type="text"
+            placeholder="Search tasks…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)}>
+            <option value="">All projects</option>
+            {state.projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="card">

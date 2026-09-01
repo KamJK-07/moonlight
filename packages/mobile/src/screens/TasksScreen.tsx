@@ -14,6 +14,8 @@ export default function TasksScreen(): React.ReactElement {
   const [text, setText] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
@@ -27,7 +29,13 @@ export default function TasksScreen(): React.ReactElement {
     setProjectId(null);
   }
 
-  const groups = groupTasks(state.tasks);
+  const filteredTasks = state.tasks.filter((t) => {
+    if (search.trim() && !t.text.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    if (filterProjectId && t.projectId !== filterProjectId) return false;
+    return true;
+  });
+
+  const groups = groupTasks(filteredTasks);
   const sections: Array<[string, Task[]]> = [
     ['Overdue', groups.overdue],
     ['Today', groups.dueToday],
@@ -81,6 +89,35 @@ export default function TasksScreen(): React.ReactElement {
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={submit}>
           <Text style={{ color: theme.accentInk, fontWeight: '600' }}>Add task</Text>
         </TouchableOpacity>
+      </Card>
+
+      <Card>
+        <TextInput
+          style={[styles.input, { borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
+          placeholder="Search tasks…"
+          placeholderTextColor={theme.inkFaint}
+          value={search}
+          onChangeText={setSearch}
+        />
+        {state.projects.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+            <TouchableOpacity
+              onPress={() => setFilterProjectId(null)}
+              style={[styles.chip, { borderColor: theme.border, backgroundColor: filterProjectId === null ? theme.accentSoft : 'transparent' }]}
+            >
+              <Text style={{ color: theme.ink, fontSize: 12 }}>All projects</Text>
+            </TouchableOpacity>
+            {state.projects.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => setFilterProjectId(p.id)}
+                style={[styles.chip, { borderColor: theme.border, backgroundColor: filterProjectId === p.id ? theme.accentSoft : 'transparent' }]}
+              >
+                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </Card>
 
       <Card>
