@@ -45,7 +45,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Link task ↔ GitHub Issue — two-way: completing a linked task
       closes the Issue (and reopens it on undo), and a "→ Issue" action
       pushes a task with no linked Issue out as a new one
-- [ ] Swipe gestures on mobile (complete / delete) — currently tap-to-toggle
+- [x] Swipe gestures on mobile (complete / delete), additive to the
+      existing tap controls
 
 ## 4. Projects
 

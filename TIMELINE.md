@@ -337,4 +337,38 @@ Commit: [`6c56039`](https://github.com/KamJK-07/moonlight/commit/6c56039).
 
 ---
 
+## 2026-09-01 — Swipe gestures on mobile TaskRow
+
+**What**: Tasks §3, `[ ] Swipe gestures on mobile (complete / delete)`
+→ `[x]`. Swipe right to complete/undo, swipe left to delete, additive
+to the existing tap controls.
+
+**How**: This one needed a new native dependency
+(`react-native-gesture-handler`), so it was staged rather than handed
+straight to an agent: installed it myself via `npx expo install` (picks
+an SDK-57-compatible version automatically), wrapped the app root in
+the required `GestureHandlerRootView`, and pushed that alone first so
+CI's real Xcode/CocoaPods build could confirm the native module links
+cleanly *before* any UI was built on top of it — isolating the riskiest
+part (a new native dependency) from the part more likely to need
+iteration (the swipe UI). Once that came back green, an agent built the
+actual `Swipeable` wiring on `TaskRow`. It independently verified the
+library's real exported API by reading `node_modules` source rather
+than assuming from a different version's docs, since gesture-handler's
+`Swipeable` export changed shape across versions. Reviewed by hand: the
+`onSwipeableOpen(direction)` → complete-vs-delete mapping is easy to
+get backwards, so I re-verified the `direction === 'left'` ⟷
+`renderLeftActions` (revealed by swiping *right*) correspondence
+directly against the library's source rather than trusting the
+self-report.
+
+**Verified**: `lint`, `typecheck`, and `expo export` for both `ios` and
+`android` clean, for both the dependency-only commit and the UI commit.
+
+Commits: [`aedf14a`](https://github.com/KamJK-07/moonlight/commit/aedf14a)
+(dependency + root setup), [`1730d45`](https://github.com/KamJK-07/moonlight/commit/1730d45)
+(swipe UI).
+
+---
+
 <!-- New entries append below this line. -->
