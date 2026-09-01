@@ -5,6 +5,7 @@ import type { Idea, IdeaStatus } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { anthropicSecretStore } from '../store/secureStore';
 import Card from '../components/Card';
+import Chip from '../components/Chip';
 
 const STATUSES: IdeaStatus[] = ['raw', 'exploring', 'parked', 'shipped'];
 const FILTERS: Array<IdeaStatus | 'all'> = ['all', ...STATUSES];
@@ -86,13 +87,7 @@ export default function IdeasScreen(): React.ReactElement {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
         {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.chip, { borderColor: theme.border, backgroundColor: filter === f ? theme.accentSoft : 'transparent' }]}
-          >
-            <Text style={{ color: theme.ink, fontSize: 12 }}>{f}</Text>
-          </TouchableOpacity>
+          <Chip key={f} label={f} selected={filter === f} onPress={() => setFilter(f)} />
         ))}
       </ScrollView>
 
@@ -150,13 +145,7 @@ export default function IdeasScreen(): React.ReactElement {
           {idea.tag && <Text style={{ color: theme.inkFaint, fontSize: 11, marginBottom: 4 }}>{idea.tag}</Text>}
           <View style={styles.chipsRow}>
             {STATUSES.map((s) => (
-              <TouchableOpacity
-                key={s}
-                onPress={() => store.setIdeaStatus(idea.id, s)}
-                style={[styles.chip, { borderColor: theme.border, backgroundColor: idea.status === s ? theme.accentSoft : 'transparent' }]}
-              >
-                <Text style={{ color: theme.ink, fontSize: 12 }}>{s}</Text>
-              </TouchableOpacity>
+              <Chip key={s} label={s} selected={idea.status === s} onPress={() => store.setIdeaStatus(idea.id, s)} />
             ))}
           </View>
           <View style={styles.chipsRow}>
@@ -215,7 +204,6 @@ const styles = StyleSheet.create({
   riff: { borderRadius: 8, borderLeftWidth: 2, padding: 10, marginTop: 6 },
   chipsScroll: { marginBottom: 10 },
   chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   archivedSection: { marginTop: 8 },
   archivedLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6, paddingHorizontal: 4 },
   archivedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4, borderBottomWidth: StyleSheet.hairlineWidth },

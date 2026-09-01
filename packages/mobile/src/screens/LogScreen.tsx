@@ -4,6 +4,7 @@ import { groupLogEntriesByWeek, startOfWeek, todayKey, addDays } from '@moonligh
 import type { DateKey } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
+import Chip from '../components/Chip';
 import Pill from '../components/Pill';
 
 function fmtShort(dateKey: string): string {
@@ -50,20 +51,9 @@ export default function LogScreen(): React.ReactElement {
         />
         {state.projects.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-            <TouchableOpacity
-              onPress={() => setProjectId(null)}
-              style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === null ? theme.accentSoft : 'transparent' }]}
-            >
-              <Text style={{ color: theme.ink, fontSize: 12 }}>No project</Text>
-            </TouchableOpacity>
+            <Chip label="No project" selected={projectId === null} onPress={() => setProjectId(null)} />
             {state.projects.map((p) => (
-              <TouchableOpacity
-                key={p.id}
-                onPress={() => setProjectId(p.id)}
-                style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === p.id ? theme.accentSoft : 'transparent' }]}
-              >
-                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
-              </TouchableOpacity>
+              <Chip key={p.id} label={p.name} selected={projectId === p.id} onPress={() => setProjectId(p.id)} />
             ))}
           </ScrollView>
         )}
@@ -107,7 +97,6 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 10, minHeight: 60, marginBottom: 10, textAlignVertical: 'top' },
   chipsScroll: { marginBottom: 10 },
-  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   groupLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 },

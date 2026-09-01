@@ -10,6 +10,7 @@ import {
 } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
+import Chip from '../components/Chip';
 import Pill from '../components/Pill';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -127,6 +128,14 @@ export default function CalendarScreen(): React.ReactElement {
             </View>
           );
         })}
+        {state.projects.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+            <Chip label="No project" selected={projectId === null} onPress={() => setProjectId(null)} />
+            {state.projects.map((p) => (
+              <Chip key={p.id} label={p.name} selected={projectId === p.id} onPress={() => setProjectId(p.id)} />
+            ))}
+          </ScrollView>
+        )}
         <View style={styles.addRow}>
           <TextInput
             style={[styles.input, { flex: 2, borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
@@ -146,25 +155,6 @@ export default function CalendarScreen(): React.ReactElement {
             <Text style={{ color: theme.accentInk, fontWeight: '600' }}>Add</Text>
           </TouchableOpacity>
         </View>
-        {state.projects.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-            <TouchableOpacity
-              onPress={() => setProjectId(null)}
-              style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === null ? theme.accentSoft : 'transparent' }]}
-            >
-              <Text style={{ color: theme.ink, fontSize: 12 }}>No project</Text>
-            </TouchableOpacity>
-            {state.projects.map((p) => (
-              <TouchableOpacity
-                key={p.id}
-                onPress={() => setProjectId(p.id)}
-                style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === p.id ? theme.accentSoft : 'transparent' }]}
-              >
-                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
       </Card>
     </ScrollView>
   );
@@ -183,5 +173,4 @@ const styles = StyleSheet.create({
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 8 },
   addButton: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   chipsScroll: { marginTop: 8 },
-  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
 });

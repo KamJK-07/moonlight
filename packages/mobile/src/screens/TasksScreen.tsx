@@ -4,6 +4,7 @@ import { groupTasks } from '@moonlight/core';
 import type { Task, TaskPriority } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
+import Chip from '../components/Chip';
 import TaskRow from '../components/TaskRow';
 
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high'];
@@ -55,34 +56,14 @@ export default function TasksScreen(): React.ReactElement {
         />
         <View style={styles.chipsRow}>
           {PRIORITIES.map((p) => (
-            <TouchableOpacity
-              key={p}
-              onPress={() => setPriority(p)}
-              style={[
-                styles.chip,
-                { borderColor: theme.border, backgroundColor: priority === p ? theme.accentSoft : 'transparent' },
-              ]}
-            >
-              <Text style={{ color: theme.ink, fontSize: 12 }}>{p}</Text>
-            </TouchableOpacity>
+            <Chip key={p} label={p} selected={priority === p} onPress={() => setPriority(p)} />
           ))}
         </View>
         {state.projects.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-            <TouchableOpacity
-              onPress={() => setProjectId(null)}
-              style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === null ? theme.accentSoft : 'transparent' }]}
-            >
-              <Text style={{ color: theme.ink, fontSize: 12 }}>No project</Text>
-            </TouchableOpacity>
+            <Chip label="No project" selected={projectId === null} onPress={() => setProjectId(null)} />
             {state.projects.map((p) => (
-              <TouchableOpacity
-                key={p.id}
-                onPress={() => setProjectId(p.id)}
-                style={[styles.chip, { borderColor: theme.border, backgroundColor: projectId === p.id ? theme.accentSoft : 'transparent' }]}
-              >
-                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
-              </TouchableOpacity>
+              <Chip key={p.id} label={p.name} selected={projectId === p.id} onPress={() => setProjectId(p.id)} />
             ))}
           </ScrollView>
         )}
@@ -101,20 +82,9 @@ export default function TasksScreen(): React.ReactElement {
         />
         {state.projects.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-            <TouchableOpacity
-              onPress={() => setFilterProjectId(null)}
-              style={[styles.chip, { borderColor: theme.border, backgroundColor: filterProjectId === null ? theme.accentSoft : 'transparent' }]}
-            >
-              <Text style={{ color: theme.ink, fontSize: 12 }}>All projects</Text>
-            </TouchableOpacity>
+            <Chip label="All projects" selected={filterProjectId === null} onPress={() => setFilterProjectId(null)} />
             {state.projects.map((p) => (
-              <TouchableOpacity
-                key={p.id}
-                onPress={() => setFilterProjectId(p.id)}
-                style={[styles.chip, { borderColor: theme.border, backgroundColor: filterProjectId === p.id ? theme.accentSoft : 'transparent' }]}
-              >
-                <Text style={{ color: theme.ink, fontSize: 12 }}>{p.name}</Text>
-              </TouchableOpacity>
+              <Chip key={p.id} label={p.name} selected={filterProjectId === p.id} onPress={() => setFilterProjectId(p.id)} />
             ))}
           </ScrollView>
         )}
@@ -167,7 +137,6 @@ const styles = StyleSheet.create({
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 10, marginBottom: 10 },
   chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
   chipsScroll: { marginBottom: 10 },
-  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   groupLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 },
 });
