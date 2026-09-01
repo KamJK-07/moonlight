@@ -28,7 +28,9 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Tap a day → agenda list + add/edit/delete event
 - [x] Jump-to-today
 - [x] Week view toggle
-- [ ] Recurring events (daily/weekly/monthly)
+- [x] Recurring events (daily/weekly/monthly) — deleting any occurrence
+      stops the whole series; no per-occurrence editing (this app has
+      no edit-event feature at all yet to build that against)
 - [x] Local notification reminders for upcoming events
 - [x] Project-linked events — picker in the add-event form, shown as a tag on each event
 - [x] GitHub milestones surfaced on the calendar
@@ -105,8 +107,10 @@ data model and part of the feature exist but the UI isn't wired up yet.
       merge, always confirmed before any overwrite in either direction
 - [x] Notification preferences — on/off + minutes-before lead time for
       calendar events (in the Reminders card, Settings)
-- [~] Accessibility — desktop respects `prefers-reduced-motion`; dynamic
-      text scaling not explicitly tuned on either platform
+- [x] Accessibility — desktop respects `prefers-reduced-motion` and now
+      has a Small/Normal/Large/Extra-large text-size control (rescales
+      the whole UI via a root font-size, since global.css is built on
+      rem units); mobile gets this for free from OS Dynamic Type
 - [x] About / version screen
 
 ---

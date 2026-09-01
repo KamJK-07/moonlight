@@ -526,4 +526,45 @@ Dependency setup: [`e39d3bd`](https://github.com/KamJK-07/moonlight/commit/e39d3
 
 ---
 
+## 2026-09-01 — Recurring events and text-size accessibility — ROADMAP.md complete
+
+**What**: The last two items:
+- Calendar §2, `[ ] Recurring events (daily/weekly/monthly)` → `[x]` —
+  a new `occurrencesInRange` core function expands stored recurring
+  events into virtual occurrences for whatever date range is visible,
+  without duplicating storage per occurrence. Deleting any occurrence
+  stops the whole series (this app has no edit-event feature at all
+  yet, so there was nothing to build per-occurrence editing against).
+- Settings §8, `[~] Accessibility` → `[x]` — desktop gets an actual
+  text-size control (it had none); mobile already gets Dynamic Type
+  scaling for free from React Native's defaults, confirmed by grepping
+  for `allowFontScaling`/`maxFontSizeMultiplier` overrides and finding
+  none anywhere in the app.
+
+Every line in ROADMAP.md is now `[x]`.
+
+**How**: Same pattern as reminders and sync earlier this session for
+the recurring-events math — designed and hand-verified the occurrence-
+expansion algorithm against 9 cases in a standalone script (including
+the classic monthly recurrence bug: a day-31 event must skip February
+and April entirely, not clamp to the 28th/30th or drift to a different
+day in later months) before handing the exact, tested algorithm to the
+implementing agent. Two agents ran in parallel on independent files
+(Calendar screens vs. Settings/App-shell files); their core-layer
+changes shared two test fixture files that needed both new required
+fields at once to type-check, so those landed as one combined "core"
+commit rather than two, followed by two separate feature-UI commits.
+
+**Verified**: reviewed `recurrence.ts` against the pre-tested algorithm
+byte-for-byte (identical), traced the `originalDate` delete-targeting
+fix by hand on both platforms, then `lint`, `typecheck`, `test`
+(82/82), desktop build, and `expo export --platform ios` all clean.
+
+Commits: [`5be66f4`](https://github.com/KamJK-07/moonlight/commit/5be66f4)
+(core), [`c34b8a5`](https://github.com/KamJK-07/moonlight/commit/c34b8a5)
+(recurring events UI), [`9776ded`](https://github.com/KamJK-07/moonlight/commit/9776ded)
+(text-size accessibility UI).
+
+---
+
 <!-- New entries append below this line. -->
