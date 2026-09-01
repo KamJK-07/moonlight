@@ -13,6 +13,7 @@ interface Props {
   onAddSubtask: (taskId: string, text: string) => void;
   onToggleSubtask: (taskId: string, subtaskId: string, done: boolean) => void;
   onDeleteSubtask: (taskId: string, subtaskId: string) => void;
+  onCreateIssue?: (taskId: string) => void;
 }
 
 function fmtShort(dateKey: string): string {
@@ -31,6 +32,7 @@ export default function TaskRow({
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
+  onCreateIssue,
 }: Props): React.ReactElement {
   const theme = useTheme();
   const today = todayKey();
@@ -76,6 +78,11 @@ export default function TaskRow({
         <TouchableOpacity onPress={() => setExpanded((e) => !e)} hitSlop={8}>
           <Text style={[styles.chevron, { color: theme.inkFaint }]}>{expanded ? '▾' : '▸'}</Text>
         </TouchableOpacity>
+        {onCreateIssue && !task.githubIssue && (
+          <TouchableOpacity onPress={() => onCreateIssue(task.id)} hitSlop={8}>
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Issue</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity onPress={() => onDelete(task.id)} hitSlop={8}>
           <Text style={[styles.delete, { color: theme.inkFaint }]}>×</Text>
         </TouchableOpacity>

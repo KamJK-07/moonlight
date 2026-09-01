@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { groupTasks } from '@moonlight/core';
 import type { TaskPriority } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
+import { useTaskGithubSync } from '../store/useTaskGithubSync';
 import TaskRow from '../components/TaskRow';
 
 export default function TasksScreen(): React.ReactElement {
   const { state, store } = useWorklight();
+  const { status: githubStatus, client: githubClient } = useGithub();
+  const { toggleTaskWithSync } = useTaskGithubSync();
   const [text, setText] = useState('');
   const [projectId, setProjectId] = useState('');
   const [due, setDue] = useState('');
@@ -34,24 +38,41 @@ export default function TasksScreen(): React.ReactElement {
 
   const groups = groupTasks(filteredTasks);
 
+  function createIssueForTask(taskId: string) {
+    const task = state.tasks.find((t) => t.id === taskId);
+    const project = task ? projectOf(task.projectId) : undefined;
+    if (!task || !project?.githubRepo || !githubClient) return;
+    const [owner, repoName] = project.githubRepo.split('/');
+    if (!owner || !repoName) return;
+    void githubClient.createIssue(project.githubRepo, task.text).then((created) => {
+      store.updateTask(task.id, {
+        githubIssue: { owner, repo: repoName, number: created.number, url: created.url, state: created.state },
+      });
+    });
+  }
+
   function renderGroup(label: string, tasks: typeof groups.overdue) {
     if (tasks.length === 0) return null;
     return (
       <>
         <div className="group-label">{label}</div>
         <ul className="list">
-          {tasks.map((t) => (
-            <TaskRow
-              key={t.id}
-              task={t}
-              project={projectOf(t.projectId)}
-              onToggle={(id, done) => store.toggleTask(id, done)}
-              onDelete={(id) => store.deleteTask(id)}
-              onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
-              onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
-              onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
-            />
-          ))}
+          {tasks.map((t) => {
+            const proj = projectOf(t.projectId);
+            return (
+              <TaskRow
+                key={t.id}
+                task={t}
+                project={proj}
+                onToggle={(id, done) => toggleTaskWithSync(t, done)}
+                onDelete={(id) => store.deleteTask(id)}
+                onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
+                onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
+                onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
+                onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
+              />
+            );
+          })}
         </ul>
       </>
     );
@@ -125,18 +146,22 @@ export default function TasksScreen(): React.ReactElement {
             Done
           </div>
           <ul className="list">
-            {groups.done.map((t) => (
-              <TaskRow
-                key={t.id}
-                task={t}
-                project={projectOf(t.projectId)}
-                onToggle={(id, done) => store.toggleTask(id, done)}
-                onDelete={(id) => store.deleteTask(id)}
-                onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
-                onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
-                onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
-              />
-            ))}
+            {groups.done.map((t) => {
+              const proj = projectOf(t.projectId);
+              return (
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  project={proj}
+                  onToggle={(id, done) => toggleTaskWithSync(t, done)}
+                  onDelete={(id) => store.deleteTask(id)}
+                  onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
+                  onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
+                  onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
+                  onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
+                />
+              );
+            })}
           </ul>
         </div>
       )}

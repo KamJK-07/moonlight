@@ -10,6 +10,7 @@ interface Props {
   onAddSubtask: (taskId: string, text: string) => void;
   onToggleSubtask: (taskId: string, subtaskId: string, done: boolean) => void;
   onDeleteSubtask: (taskId: string, subtaskId: string) => void;
+  onCreateIssue?: (taskId: string) => void;
 }
 
 function fmtShort(dateKey: string): string {
@@ -28,6 +29,7 @@ export default function TaskRow({
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
+  onCreateIssue,
 }: Props): React.ReactElement {
   const today = todayKey();
   const [expanded, setExpanded] = useState(false);
@@ -72,6 +74,11 @@ export default function TaskRow({
         >
           {expanded ? '▾' : '▸'}
         </button>
+        {onCreateIssue && !task.githubIssue && (
+          <button className="btn-plain" onClick={() => onCreateIssue(task.id)}>
+            → Issue
+          </button>
+        )}
         <button className="btn-plain" onClick={() => onDelete(task.id)} aria-label="Delete task">
           ×
         </button>
