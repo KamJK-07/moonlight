@@ -29,7 +29,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Jump-to-today
 - [x] Week view toggle
 - [ ] Recurring events (daily/weekly/monthly)
-- [ ] Local notification reminders for upcoming events
+- [x] Local notification reminders for upcoming events
 - [x] Project-linked events — picker in the add-event form, shown as a tag on each event
 - [ ] GitHub milestones surfaced on the calendar
 
@@ -41,7 +41,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Priority levels with visual indicator
 - [x] Search & filter
 - [x] Subtasks / checklist within a task
-- [ ] Push notification reminders
+- [x] Push notification reminders — local, not server-sent (no custom
+      backend, by design); fires at 9am on the due date
 - [x] Link task ↔ GitHub Issue — two-way: completing a linked task
       closes the Issue (and reopens it on undo), and a "→ Issue" action
       pushes a task with no linked Issue out as a new one
@@ -100,7 +101,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [ ] Cross-device sync via the private GitHub repo (app data as JSON,
       committed on change, pulled on launch) — no custom backend needed;
       genuinely not started
-- [ ] Notification preferences
+- [x] Notification preferences — on/off + minutes-before lead time for
+      calendar events (in the Reminders card, Settings)
 - [~] Accessibility — desktop respects `prefers-reduced-motion`; dynamic
       text scaling not explicitly tuned on either platform
 - [x] About / version screen

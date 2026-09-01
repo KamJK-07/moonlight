@@ -371,4 +371,63 @@ Commits: [`aedf14a`](https://github.com/KamJK-07/moonlight/commit/aedf14a)
 
 ---
 
+## 2026-09-01 — Local notification reminders (tasks + calendar events)
+
+**What**: Calendar §2 (`[ ] Local notification reminders for upcoming
+events`), Tasks §3 (`[ ] Push notification reminders`), and Settings §8
+(`[ ] Notification preferences`) → all `[x]`. Calendar events with a
+time get a reminder N minutes before (default 30, configurable); tasks
+with a due date get one at 9am local on the due date. "Push" reminders
+for tasks are local, not server-sent — this app has no custom backend
+by design, so that's the only honest interpretation available.
+
+**How**: The most product-design-heavy item this session. Staged in
+three steps rather than one shot:
+1. Added the `expo-notifications` dependency myself (same staged
+   pattern as `react-native-gesture-handler` earlier) — `npx expo
+   install`, registered its config plugin in `app.json`, verified with
+   a real `expo prebuild --platform ios` and pushed alone so CI's real
+   Xcode build confirmed it links cleanly before anything was built on
+   top.
+2. Spec'd an architecture up front rather than leaving it to the
+   agent to discover: a pure, fully unit-tested core function
+   (`computeReminders`) doing all the date math once, with thin
+   platform adapters translating its output into actual OS calls —
+   specifically to avoid subtly-different date logic drifting between
+   mobile and desktop.
+3. One agent built it all: the core function + 7 tests (disabled,
+   no-time-event, done-task, past-fireAt, the 15-minute-offset case,
+   the 7-day boundary at the exact edge, and the 60-item cap with
+   soonest-first ordering — exact expected values, not just
+   happy-path), the mobile scheduler (cancel-and-reschedule-everything
+   on every state change, no per-item ID tracking needed), the desktop
+   poller (Electron has no OS-level scheduling primitive, so it polls
+   every 60s and fires while running — documented as a real limitation
+   in the Settings UI, not hidden), and the Settings UI with a mobile
+   permission-request flow that correctly refuses to enable the
+   setting if the OS denies it.
+
+Found and fixed one real bug in review: the desktop poller's
+"already fired" tracking was keyed by reminder id alone, not
+id+fireAt. Reschedule a task's due date after its original reminder
+had already fired this session, and the new reminder would silently
+never fire — same id, permanently marked "done" for the rest of the
+app's runtime. Traced the poller's lookback-window logic by hand
+(it deliberately backdates the `now` it passes to `computeReminders`
+by slightly more than the poll interval, since that function excludes
+anything already in the past — otherwise a reminder that became due
+between two polls would never appear in either poll's results) before
+finding the dedup-key issue underneath it.
+
+**Verified**: reviewed every file by hand (the `computeReminders` date
+math against `parseDateKey`'s local-time semantics in particular, to
+rule out a UTC/local mismatch), then `build --workspace core`, `lint`,
+`typecheck`, `test` (55/55), `build --workspace packages/desktop`, and
+`expo export --platform ios` all clean — re-run after the poller fix.
+
+Commit: [`c535d06`](https://github.com/KamJK-07/moonlight/commit/c535d06)
+(feature). Dependency setup: [`245af0f`](https://github.com/KamJK-07/moonlight/commit/245af0f).
+
+---
+
 <!-- New entries append below this line. -->
