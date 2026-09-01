@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { onDeck, computeStreak, activeProjectCount, todayKey, eventsForDate } from '@moonlight/core';
+import type { GithubActivityItem } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 import Card from '../components/Card';
+import Pill from '../components/Pill';
 import TaskRow from '../components/TaskRow';
 
 function Stat({ n, l, warn }: { n: number; l: string; warn?: boolean }): React.ReactElement {
@@ -23,7 +26,9 @@ const stat = StyleSheet.create({
 export default function TodayScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const theme = useTheme();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const [logText, setLogText] = useState('');
+  const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
   const today = todayKey();
   const deck = onDeck(state.tasks, today);
@@ -31,6 +36,23 @@ export default function TodayScreen(): React.ReactElement {
   const todaysEvents = eventsForDate(state.events, today);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const githubReady = githubStatus === 'connected' && state.settings.linkedRepos.length > 0;
+
+  useEffect(() => {
+    if (githubStatus === 'connected' && githubClient && state.settings.linkedRepos.length > 0) {
+      void githubClient.fetchActivityFeed(state.settings.linkedRepos).then(setGithubActivity).catch(() => setGithubActivity([]));
+    }
+  }, [githubStatus, githubClient, state.settings.linkedRepos]);
+
+  const todaysGithubActivity = (githubActivity ?? []).filter((item) => item.date.slice(0, 10) === today);
+  const commitCount = todaysGithubActivity.filter((item) => item.type === 'commit').length;
+  const prCount = todaysGithubActivity.filter((item) => item.type === 'pull_request').length;
+  const githubSummary = [
+    commitCount > 0 ? `${commitCount} commit${commitCount === 1 ? '' : 's'}` : null,
+    prCount > 0 ? `${prCount} PR${prCount === 1 ? '' : 's'}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
@@ -69,6 +91,21 @@ export default function TodayScreen(): React.ReactElement {
           />
         ))}
       </Card>
+
+      {githubReady && (
+        <Card>
+          <Text style={[styles.cardTitle, { color: theme.ink }]}>GitHub activity</Text>
+          <Text style={{ color: theme.inkSoft, marginBottom: todaysGithubActivity.length ? 8 : 0 }}>
+            {githubSummary ? `${githubSummary} today` : 'No activity yet today'}
+          </Text>
+          {todaysGithubActivity.slice(0, 5).map((item) => (
+            <View key={`${item.type}-${item.id}`} style={styles.eventRow}>
+              <Pill label={item.type === 'commit' ? 'commit' : item.state ?? 'pr'} />
+              <Text style={{ color: theme.ink, flex: 1, marginLeft: 8 }} numberOfLines={1}>{item.title}</Text>
+            </View>
+          ))}
+        </Card>
+      )}
 
       {todaysEvents.length > 0 && (
         <Card>

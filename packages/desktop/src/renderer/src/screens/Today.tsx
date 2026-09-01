@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { onDeck, computeStreak, activeProjectCount, todayKey, eventsForDate } from '@moonlight/core';
+import type { GithubActivityItem } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 import TaskRow from '../components/TaskRow';
 import type { ViewId } from '../App';
 
 export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (v: ViewId) => void }): React.ReactElement {
   const { state, store } = useWorklight();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const [logText, setLogText] = useState('');
+  const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
   const today = todayKey();
   const deck = onDeck(state.tasks, today);
@@ -14,6 +18,23 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
   const todaysEvents = eventsForDate(state.events, today);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const githubReady = githubStatus === 'connected' && state.settings.linkedRepos.length > 0;
+
+  useEffect(() => {
+    if (githubStatus === 'connected' && githubClient && state.settings.linkedRepos.length > 0) {
+      void githubClient.fetchActivityFeed(state.settings.linkedRepos).then(setGithubActivity).catch(() => setGithubActivity([]));
+    }
+  }, [githubStatus, githubClient, state.settings.linkedRepos]);
+
+  const todaysGithubActivity = (githubActivity ?? []).filter((item) => item.date.slice(0, 10) === today);
+  const commitCount = todaysGithubActivity.filter((item) => item.type === 'commit').length;
+  const prCount = todaysGithubActivity.filter((item) => item.type === 'pull_request').length;
+  const githubSummary = [
+    commitCount > 0 ? `${commitCount} commit${commitCount === 1 ? '' : 's'}` : null,
+    prCount > 0 ? `${prCount} PR${prCount === 1 ? '' : 's'}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
@@ -71,6 +92,23 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
           ))}
         </ul>
       </div>
+
+      {githubReady && (
+        <div className="card">
+          <h3>GitHub activity</h3>
+          <p className="empty" style={{ marginTop: 0 }}>
+            {githubSummary ? `${githubSummary} today` : 'No activity yet today'}
+          </p>
+          <ul className="list">
+            {todaysGithubActivity.slice(0, 5).map((item) => (
+              <li key={`${item.type}-${item.id}`} className="row">
+                <span className={`pill ${item.state ?? 'open'}`}>{item.type === 'commit' ? 'commit' : item.state ?? 'pr'}</span>
+                <span className="row-text">{item.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {todaysEvents.length > 0 && (
         <div className="card">
