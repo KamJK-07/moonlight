@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { sortLogEntries } from '@moonlight/core';
+import { groupLogEntriesByWeek, startOfWeek, todayKey, addDays } from '@moonlight/core';
+import type { DateKey } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
 import Pill from '../components/Pill';
@@ -8,6 +9,13 @@ import Pill from '../components/Pill';
 function fmtShort(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);
   return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function weekLabel(weekStart: DateKey, weekEnd: DateKey): string {
+  const thisWeekStart = startOfWeek(todayKey());
+  if (weekStart === thisWeekStart) return 'This week';
+  if (weekStart === addDays(thisWeekStart, -7)) return 'Last week';
+  return `${fmtShort(weekStart)} – ${fmtShort(weekEnd)}`;
 }
 
 export default function LogScreen(): React.ReactElement {
@@ -27,7 +35,7 @@ export default function LogScreen(): React.ReactElement {
     return id ? state.projects.find((p) => p.id === id) : undefined;
   }
 
-  const sorted = sortLogEntries(state.logEntries);
+  const weekGroups = groupLogEntriesByWeek(state.logEntries);
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -64,24 +72,31 @@ export default function LogScreen(): React.ReactElement {
         </TouchableOpacity>
       </Card>
 
-      {sorted.length === 0 && <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>No entries yet.</Text>}
+      {weekGroups.length === 0 && <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>No entries yet.</Text>}
 
-      {sorted.length > 0 && (
+      {weekGroups.length > 0 && (
         <Card>
-          {sorted.map((e) => {
-            const project = projectOf(e.projectId);
-            return (
-              <View key={e.id} style={[styles.row, { borderBottomColor: theme.border }]}>
-                <Pill label={fmtShort(e.date)} />
-                <Text style={{ color: theme.ink, flex: 1, marginLeft: 8 }}>{e.text}</Text>
-                {project && <Pill label={project.name} />}
-                {e.source === 'github' && <Pill label="github" />}
-                <TouchableOpacity onPress={() => store.deleteLogEntry(e.id)} hitSlop={8}>
-                  <Text style={{ color: theme.inkFaint, fontSize: 16, marginLeft: 6 }}>×</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+          {weekGroups.map((g) => (
+            <View key={g.weekStart}>
+              <Text style={[styles.groupLabel, { color: theme.inkFaint }]}>
+                {weekLabel(g.weekStart, g.weekEnd).toUpperCase()} ({g.entries.length})
+              </Text>
+              {g.entries.map((e) => {
+                const project = projectOf(e.projectId);
+                return (
+                  <View key={e.id} style={[styles.row, { borderBottomColor: theme.border }]}>
+                    <Pill label={fmtShort(e.date)} />
+                    <Text style={{ color: theme.ink, flex: 1, marginLeft: 8 }}>{e.text}</Text>
+                    {project && <Pill label={project.name} />}
+                    {e.source === 'github' && <Pill label="github" />}
+                    <TouchableOpacity onPress={() => store.deleteLogEntry(e.id)} hitSlop={8}>
+                      <Text style={{ color: theme.inkFaint, fontSize: 16, marginLeft: 6 }}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
         </Card>
       )}
     </ScrollView>
@@ -95,4 +110,5 @@ const styles = StyleSheet.create({
   chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  groupLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 },
 });

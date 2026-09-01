@@ -7,7 +7,7 @@ import type {
   CalendarEvent,
   DateKey,
 } from './types';
-import { todayKey, addDays, isBefore } from './dates';
+import { todayKey, addDays, isBefore, startOfWeek } from './dates';
 
 /** Splits open/closed tasks into the buckets the Tasks and Today views render. */
 export function groupTasks(tasks: Task[], today: DateKey = todayKey()): TaskGroups {
@@ -78,4 +78,25 @@ export function sortLogEntries(entries: LogEntry[]): LogEntry[] {
 
 export function sortIdeasByRecency<T extends { createdAt: string }>(ideas: T[]): T[] {
   return [...ideas].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export interface LogWeekGroup {
+  weekStart: DateKey;
+  weekEnd: DateKey;
+  entries: LogEntry[];
+}
+
+/** Buckets log entries into Monday-start weeks, most recent week first. */
+export function groupLogEntriesByWeek(entries: LogEntry[]): LogWeekGroup[] {
+  const groups: LogWeekGroup[] = [];
+  for (const entry of sortLogEntries(entries)) {
+    const weekStart = startOfWeek(entry.date);
+    const current = groups[groups.length - 1];
+    if (current && current.weekStart === weekStart) {
+      current.entries.push(entry);
+    } else {
+      groups.push({ weekStart, weekEnd: addDays(weekStart, 6), entries: [entry] });
+    }
+  }
+  return groups;
 }

@@ -1,5 +1,24 @@
-import { groupTasks, onDeck, projectProgress, computeStreak, activeProjectCount } from '../src/selectors';
+import {
+  groupTasks,
+  onDeck,
+  projectProgress,
+  computeStreak,
+  activeProjectCount,
+  groupLogEntriesByWeek,
+} from '../src/selectors';
 import type { Task, Project, LogEntry } from '../src/types';
+
+function makeLogEntry(overrides: Partial<LogEntry>): LogEntry {
+  return {
+    id: overrides.id ?? Math.random().toString(36),
+    date: '2026-08-31',
+    text: 'test entry',
+    projectId: null,
+    source: 'manual',
+    createdAt: '2026-08-31T00:00:00.000Z',
+    ...overrides,
+  };
+}
 
 function makeTask(overrides: Partial<Task>): Task {
   return {
@@ -139,5 +158,38 @@ describe('activeProjectCount', () => {
       { ...base, id: '4', status: 'active' as const },
     ];
     expect(activeProjectCount(projects)).toBe(2);
+  });
+});
+
+describe('groupLogEntriesByWeek', () => {
+  it('groups entries into Monday-start weeks, most recent week first', () => {
+    const entries = [
+      // Week of 2026-08-24 (Mon) - 2026-08-30 (Sun)
+      makeLogEntry({ id: 'a', date: '2026-08-24' }),
+      makeLogEntry({ id: 'b', date: '2026-08-26' }),
+      // Week of 2026-08-31 (Mon) - 2026-09-06 (Sun)
+      makeLogEntry({ id: 'c', date: '2026-08-31' }),
+      makeLogEntry({ id: 'd', date: '2026-09-01' }),
+    ];
+    const groups = groupLogEntriesByWeek(entries);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toMatchObject({ weekStart: '2026-08-31', weekEnd: '2026-09-06' });
+    expect(groups[0]?.entries.map((e) => e.id)).toEqual(['d', 'c']);
+    expect(groups[1]).toMatchObject({ weekStart: '2026-08-24', weekEnd: '2026-08-30' });
+    expect(groups[1]?.entries.map((e) => e.id)).toEqual(['b', 'a']);
+  });
+
+  it('treats Sunday as the last day of its week, not the start of a new one', () => {
+    const entries = [
+      makeLogEntry({ id: 'mon', date: '2026-08-24' }),
+      makeLogEntry({ id: 'sun', date: '2026-08-30' }),
+    ];
+    const groups = groupLogEntriesByWeek(entries);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ weekStart: '2026-08-24', weekEnd: '2026-08-30' });
+  });
+
+  it('returns an empty array for no entries', () => {
+    expect(groupLogEntriesByWeek([])).toEqual([]);
   });
 });

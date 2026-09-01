@@ -28,6 +28,12 @@ export function isBefore(a: DateKey, b: DateKey): boolean {
   return a < b; // "YYYY-MM-DD" sorts lexicographically = chronologically
 }
 
+/** Monday of the week containing the given date, as a DateKey. */
+export function startOfWeek(key: DateKey): DateKey {
+  const dow = parseDateKey(key).getDay(); // 0 Sun .. 6 Sat
+  return addDays(key, dow === 0 ? -6 : 1 - dow);
+}
+
 export function yearMonthOf(key: DateKey): string {
   return key.slice(0, 7);
 }
