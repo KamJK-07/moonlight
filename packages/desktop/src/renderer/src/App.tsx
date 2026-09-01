@@ -12,6 +12,7 @@ import LogScreen from './screens/Log';
 import IdeasScreen from './screens/Ideas';
 import GithubScreen from './screens/GithubScreen';
 import SettingsScreen from './screens/Settings';
+import QuickAdd from './components/QuickAdd';
 
 export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas' | 'github' | 'settings';
 
@@ -141,6 +142,7 @@ function Shell(): React.ReactElement {
         {view === 'github' && <GithubScreen />}
         {view === 'settings' && <SettingsScreen />}
       </main>
+      <QuickAdd />
     </div>
   );
 }

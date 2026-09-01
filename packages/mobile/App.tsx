@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { WorklightProvider } from './src/store/WorklightContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import QuickAdd from './src/components/QuickAdd';
 
 export default function App(): React.ReactElement {
   return (
@@ -12,6 +13,7 @@ export default function App(): React.ReactElement {
         <WorklightProvider>
           <StatusBar style="auto" />
           <RootNavigator />
+          <QuickAdd />
         </WorklightProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
