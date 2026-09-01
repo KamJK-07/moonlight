@@ -6,11 +6,11 @@ import {
   daysInMonth,
   firstWeekdayOfMonth,
   yearMonthOf,
-  eventsForDate,
   addDays,
   weekDates,
+  occurrencesInRange,
 } from '@moonlight/core';
-import type { GithubMilestone } from '@moonlight/core';
+import type { GithubMilestone, EventRecurrence } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 import Card from '../components/Card';
@@ -20,6 +20,7 @@ import Pill from '../components/Pill';
 const DOW_MONTH = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DOW_WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const CELL_WIDTH = `${100 / 7}%`;
+const RECURRENCE_OPTIONS: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 
 function monthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);
@@ -52,6 +53,7 @@ export default function CalendarScreen(): React.ReactElement {
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [recurrence, setRecurrence] = useState<EventRecurrence>('none');
   const [milestonesByRepo, setMilestonesByRepo] = useState<Record<string, GithubMilestone[]>>({});
 
   function projectOf(id: string | null) {
@@ -115,14 +117,22 @@ export default function CalendarScreen(): React.ReactElement {
 
   function submitEvent() {
     if (!title.trim()) return;
-    store.addEvent({ date: selected, title, time: time || null, projectId });
+    store.addEvent({ date: selected, title, time: time || null, projectId, recurrence });
     setTitle('');
     setTime('');
     setProjectId(null);
+    setRecurrence('none');
   }
 
+  const rangeStart = view === 'week' ? weekDates(selected)[0]! : dateKeyFrom(year, monthNum, 1);
+  const rangeEnd = view === 'week' ? weekDates(selected)[6]! : dateKeyFrom(year, monthNum, total);
+  const expandedEvents = useMemo(
+    () => occurrencesInRange(state.events, rangeStart, rangeEnd),
+    [state.events, rangeStart, rangeEnd],
+  );
+
   function dayCell(key: string, label: number) {
-    const has = (state.events[key]?.length ?? 0) > 0;
+    const has = (expandedEvents[key]?.length ?? 0) > 0;
     const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
@@ -156,7 +166,7 @@ export default function CalendarScreen(): React.ReactElement {
     for (let d = 1; d <= total; d++) cells.push(dayCell(dateKeyFrom(year, monthNum, d), d));
   }
 
-  const selectedEvents = eventsForDate(state.events, selected);
+  const selectedEvents = expandedEvents[selected] ?? [];
   const selectedMilestones = milestonesByDate[selected] ?? [];
 
   return (
@@ -196,9 +206,10 @@ export default function CalendarScreen(): React.ReactElement {
           return (
             <View key={ev.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
               <Text style={{ color: theme.ink, flex: 1 }}>{ev.title}</Text>
+              {ev.recurrence !== 'none' && <Pill label={ev.recurrence} tone="accent" />}
               {evProject && <Pill label={evProject.name} />}
               {ev.time && <Text style={{ color: theme.inkFaint, fontSize: 12, marginHorizontal: 8 }}>{ev.time}</Text>}
-              <TouchableOpacity onPress={() => store.deleteEvent(selected, ev.id)} hitSlop={8}>
+              <TouchableOpacity onPress={() => store.deleteEvent(ev.originalDate, ev.id)} hitSlop={8}>
                 <Text style={{ color: theme.inkFaint, fontSize: 16 }}>×</Text>
               </TouchableOpacity>
             </View>
@@ -212,6 +223,11 @@ export default function CalendarScreen(): React.ReactElement {
             ))}
           </ScrollView>
         )}
+        <View style={[styles.viewToggle, { marginTop: 8 }]}>
+          {RECURRENCE_OPTIONS.map((opt) => (
+            <Chip key={opt} label={opt === 'none' ? 'None' : opt[0]!.toUpperCase() + opt.slice(1)} selected={recurrence === opt} onPress={() => setRecurrence(opt)} />
+          ))}
+        </View>
         <View style={styles.addRow}>
           <TextInput
             style={[styles.input, { flex: 2, borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}

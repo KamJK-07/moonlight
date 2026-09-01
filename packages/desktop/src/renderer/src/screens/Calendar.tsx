@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, eventsForDate, addDays, weekDates } from '@moonlight/core';
-import type { GithubMilestone } from '@moonlight/core';
+import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, addDays, weekDates, occurrencesInRange } from '@moonlight/core';
+import type { GithubMilestone, EventRecurrence } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 
 const DOW_MONTH = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DOW_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const RECURRENCE_OPTIONS: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 
 function monthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);
@@ -39,6 +40,7 @@ export default function CalendarScreen(): React.ReactElement {
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [recurrence, setRecurrence] = useState<EventRecurrence>('none');
   const [milestonesByRepo, setMilestonesByRepo] = useState<Record<string, GithubMilestone[]>>({});
 
   function projectOf(id: string | null) {
@@ -106,14 +108,22 @@ export default function CalendarScreen(): React.ReactElement {
   function submitEvent(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    store.addEvent({ date: selected, title, time: time || null, projectId: projectId || null });
+    store.addEvent({ date: selected, title, time: time || null, projectId: projectId || null, recurrence });
     setTitle('');
     setTime('');
     setProjectId('');
+    setRecurrence('none');
   }
 
+  const rangeStart = view === 'week' ? weekDates(selected)[0]! : dateKeyFrom(year, monthNum, 1);
+  const rangeEnd = view === 'week' ? weekDates(selected)[6]! : dateKeyFrom(year, monthNum, total);
+  const expandedEvents = useMemo(
+    () => occurrencesInRange(state.events, rangeStart, rangeEnd),
+    [state.events, rangeStart, rangeEnd],
+  );
+
   function dayCell(key: string, label: number) {
-    const has = (state.events[key]?.length ?? 0) > 0;
+    const has = (expandedEvents[key]?.length ?? 0) > 0;
     const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
@@ -142,7 +152,7 @@ export default function CalendarScreen(): React.ReactElement {
     for (let d = 1; d <= total; d++) cells.push(dayCell(dateKeyFrom(year, monthNum, d), d));
   }
 
-  const selectedEvents = eventsForDate(state.events, selected);
+  const selectedEvents = expandedEvents[selected] ?? [];
   const selectedMilestones = milestonesByDate[selected] ?? [];
 
   return (
@@ -199,9 +209,10 @@ export default function CalendarScreen(): React.ReactElement {
             return (
               <li key={ev.id} className="row">
                 <span className="row-text">{ev.title}</span>
+                {ev.recurrence !== 'none' && <span className="tag" title="Deleting removes the whole series">↻ {ev.recurrence}</span>}
                 {evProject && <span className="tag">{evProject.name}</span>}
                 {ev.time && <span className="tag mono">{ev.time}</span>}
-                <button className="btn-plain" onClick={() => store.deleteEvent(selected, ev.id)} aria-label="Delete event">
+                <button className="btn-plain" onClick={() => store.deleteEvent(ev.originalDate, ev.id)} aria-label="Delete event">
                   ×
                 </button>
               </li>
@@ -223,6 +234,13 @@ export default function CalendarScreen(): React.ReactElement {
               {state.projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </select>
+            <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as EventRecurrence)}>
+              {RECURRENCE_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt === 'none' ? 'Does not repeat' : opt[0]!.toUpperCase() + opt.slice(1)}
                 </option>
               ))}
             </select>
