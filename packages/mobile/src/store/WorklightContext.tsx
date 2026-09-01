@@ -3,6 +3,7 @@ import { useColorScheme, View, Text, StyleSheet } from 'react-native';
 import { WorklightStore, createInitialState, type WorklightState } from '@moonlight/core';
 import { AsyncStorageAdapter } from './storageAdapter';
 import { resolveTheme, normalizeSystemScheme, type ResolvedTheme } from '../theme';
+import { useReminderScheduler } from './reminders';
 
 interface WorklightContextValue {
   store: WorklightStore;
@@ -45,6 +46,7 @@ function ThemedTree({ children }: { children: React.ReactNode }): React.ReactEle
   const { state } = useWorklight();
   const systemScheme = normalizeSystemScheme(useColorScheme());
   const theme = resolveTheme(state.settings.themeMode, systemScheme, state.settings.accent);
+  useReminderScheduler();
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 

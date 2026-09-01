@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Share, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Share, Platform, Switch } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { serializeState, deserializeState, InvalidStateError } from '@moonlight/core';
 import type { ThemeMode, AccentTheme } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
@@ -26,10 +27,40 @@ export default function SettingsScreen(): React.ReactElement {
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [minutesInput, setMinutesInput] = useState(String(state.settings.reminderMinutesBefore));
+  const [reminderStatus, setReminderStatus] = useState<string | null>(null);
 
   useEffect(() => {
     void anthropicSecretStore.has().then(setHasKey);
   }, []);
+
+  useEffect(() => {
+    setMinutesInput(String(state.settings.reminderMinutesBefore));
+  }, [state.settings.reminderMinutesBefore]);
+
+  async function toggleReminders(next: boolean) {
+    if (!next) {
+      store.setRemindersEnabled(false);
+      setReminderStatus(null);
+      return;
+    }
+    const { granted } = await Notifications.requestPermissionsAsync();
+    if (!granted) {
+      setReminderStatus('Notification permission denied — enable it in system settings to use reminders.');
+      return;
+    }
+    setReminderStatus(null);
+    store.setRemindersEnabled(true);
+  }
+
+  function commitMinutes() {
+    const parsed = Number(minutesInput);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setMinutesInput(String(state.settings.reminderMinutesBefore));
+      return;
+    }
+    store.setReminderMinutesBefore(Math.round(parsed));
+  }
 
   async function saveKey() {
     if (!keyInput.trim()) return;
@@ -91,6 +122,30 @@ export default function SettingsScreen(): React.ReactElement {
             </TouchableOpacity>
           ))}
         </View>
+      </Card>
+
+      <Card>
+        <Text style={[styles.title, { color: theme.ink }]}>Reminders</Text>
+        <View style={styles.reminderRow}>
+          <Text style={{ color: theme.ink, flex: 1 }}>Local reminder notifications</Text>
+          <Switch value={state.settings.remindersEnabled} onValueChange={(v) => void toggleReminders(v)} />
+        </View>
+        {state.settings.remindersEnabled && (
+          <View style={styles.reminderRow}>
+            <Text style={{ color: theme.ink, flex: 1 }}>Minutes before calendar events</Text>
+            <TextInput
+              style={[styles.input, { width: 60, textAlign: 'center', borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
+              value={minutesInput}
+              onChangeText={setMinutesInput}
+              onBlur={commitMinutes}
+              keyboardType="number-pad"
+            />
+          </View>
+        )}
+        <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 4 }}>
+          Tasks with a due date remind at 9am on the day they&rsquo;re due.
+        </Text>
+        {reminderStatus && <Text style={{ color: theme.danger, fontSize: 12, marginTop: 8 }}>{reminderStatus}</Text>}
       </Card>
 
       <Card>
@@ -172,6 +227,7 @@ const styles = StyleSheet.create({
   chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
   chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
   addRow: { flexDirection: 'row', gap: 8 },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 10 },
   smallButton: { borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
 });

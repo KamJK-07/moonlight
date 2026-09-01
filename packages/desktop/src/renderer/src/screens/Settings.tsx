@@ -22,10 +22,24 @@ export default function SettingsScreen(): React.ReactElement {
   const [keyInput, setKeyInput] = useState('');
   const [keyStatus, setKeyStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [minutesInput, setMinutesInput] = useState(String(state.settings.reminderMinutesBefore));
 
   useEffect(() => {
     void anthropic.has().then(setHasAnthropicKey);
   }, [anthropic]);
+
+  useEffect(() => {
+    setMinutesInput(String(state.settings.reminderMinutesBefore));
+  }, [state.settings.reminderMinutesBefore]);
+
+  function commitMinutes() {
+    const parsed = Number(minutesInput);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setMinutesInput(String(state.settings.reminderMinutesBefore));
+      return;
+    }
+    store.setReminderMinutesBefore(Math.round(parsed));
+  }
 
   async function saveKey(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +103,39 @@ export default function SettingsScreen(): React.ReactElement {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="card">
+        <h3>Reminders</h3>
+        <div className="form-row" style={{ alignItems: 'center', marginBottom: state.settings.remindersEnabled ? '0.8rem' : 0 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="checkbox"
+              checked={state.settings.remindersEnabled}
+              onChange={(e) => store.setRemindersEnabled(e.target.checked)}
+            />
+            Local reminder notifications
+          </label>
+        </div>
+        {state.settings.remindersEnabled && (
+          <div className="form-row" style={{ alignItems: 'center', marginBottom: 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              Minutes before calendar events
+              <input
+                type="number"
+                min={0}
+                value={minutesInput}
+                onChange={(e) => setMinutesInput(e.target.value)}
+                onBlur={commitMinutes}
+                style={{ width: '5rem' }}
+              />
+            </label>
+          </div>
+        )}
+        <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)', marginTop: '0.6rem', marginBottom: 0 }}>
+          Tasks with a due date remind at 9am on the day they&rsquo;re due. Notifications only fire while
+          Moonlight is running.
+        </p>
       </div>
 
       <div className="card">

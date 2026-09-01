@@ -2,6 +2,7 @@ export * from './types';
 export * from './id';
 export * from './dates';
 export * from './selectors';
+export * from './reminders';
 export * from './storage';
 export * from './store';
 export * from './github';

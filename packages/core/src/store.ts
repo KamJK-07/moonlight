@@ -369,6 +369,14 @@ export class WorklightStore {
     this.set({ ...this.state, settings: { ...this.state.settings, githubActivitySeenAt: timestamp } });
   }
 
+  setRemindersEnabled(enabled: boolean): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, remindersEnabled: enabled } });
+  }
+
+  setReminderMinutesBefore(minutes: number): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, reminderMinutesBefore: minutes } });
+  }
+
   /** Used by import — replaces everything at once. */
   replaceState(next: WorklightState): void {
     this.set(next);

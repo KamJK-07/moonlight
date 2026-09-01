@@ -121,6 +121,10 @@ export interface Settings {
   linkedRepos: string[];
   /** ISO timestamp of the last time the user viewed GitHub activity; null means never viewed. */
   githubActivitySeenAt: string | null;
+  /** Opt-in: local reminder notifications for upcoming calendar events and task due dates. */
+  remindersEnabled: boolean;
+  /** How many minutes before a calendar event's time to fire its reminder. */
+  reminderMinutesBefore: number;
 }
 
 export interface WorklightState {

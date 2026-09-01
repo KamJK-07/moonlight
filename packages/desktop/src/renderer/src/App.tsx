@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { GithubActivityItem } from '@moonlight/core';
 import { WorklightProvider, useWorklight } from './store/WorklightContext';
 import { useGithub } from './store/useGithub';
+import { useReminderPoller } from './store/reminders';
 import TodayScreen from './screens/Today';
 import CalendarScreen from './screens/Calendar';
 import TasksScreen from './screens/Tasks';
@@ -45,6 +46,7 @@ function Shell(): React.ReactElement {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const { status: githubStatus, client: githubClient } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
+  useReminderPoller();
 
   useEffect(() => {
     document.body.dataset.accent = state.settings.accent;
