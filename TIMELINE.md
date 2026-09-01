@@ -51,4 +51,42 @@ Commit: [`062d646`](https://github.com/KamJK-07/moonlight/commit/062d646).
 
 ---
 
+## 2026-09-01 — Tasks: subtasks/checklist, and Ideas: board view by status
+
+**What**: Two roadmap items shipped in parallel:
+- Tasks §3: `[ ] Subtasks / checklist within a task` → `[x]`. New `Subtask`
+  type + `Task.subtasks` field, three store methods
+  (`addSubtask`/`toggleSubtask`/`deleteSubtask`, all defensive against
+  legacy persisted tasks missing the field), and an expandable checklist
+  on `TaskRow` on both platforms with a "n/total" progress pill.
+- Creative hub §6: `[~] Board view by status` → `[x]`. Desktop gets a
+  real 4-column kanban; mobile gets a status filter chip row + a
+  per-idea status selector (four columns don't fit a phone). Both call
+  the pre-existing `store.setIdeaStatus` — no core changes needed for
+  this one.
+
+**How**: Two independent background agents, dispatched in parallel since
+they touch disjoint files (Task-related files + core vs. Ideas-related
+files only). Each was briefed with the exact existing conventions to
+match (store method shape, TaskRow/screen structure, CSS token usage)
+and told to self-verify before reporting back. Both diffs were then
+reviewed by hand — read in full, checked against house conventions,
+checked for the usual failure modes (missing call-site wiring, unguarded
+legacy-data access) — before independently re-running the full
+verification suite on the combined tree and committing.
+
+**Verified**: `lint`, `typecheck` (all three workspaces), `test`
+(37/37, 13 new), `build --workspace packages/desktop`,
+`expo export` for both `ios` and `android` all clean, run independently
+after both agents' changes were combined (not just trusted from either
+agent's own report). CI: [run 33473146534](https://github.com/KamJK-07/moonlight/actions/runs/33473146534).
+
+Commits: [`40a0df5`](https://github.com/KamJK-07/moonlight/commit/40a0df5)
+(subtasks), [`020a375`](https://github.com/KamJK-07/moonlight/commit/020a375)
+(idea board), [`1193953`](https://github.com/KamJK-07/moonlight/commit/1193953)
+(ROADMAP.md checkoffs, also covering the color/repo/archive Projects
+work from the previous entry that hadn't been checked off yet).
+
+---
+
 <!-- New entries append below this line. -->
