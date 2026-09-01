@@ -68,12 +68,15 @@ export interface Project {
   updatedAt: ISODateTime;
 }
 
+export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
 export interface CalendarEvent {
   id: ID;
   date: DateKey;
   title: string;
   time: string | null; // "HH:MM", 24h
   projectId: ID | null;
+  recurrence: EventRecurrence;
   createdAt: ISODateTime;
 }
 
@@ -105,6 +108,7 @@ export interface Idea {
 
 export type AccentTheme = 'amber' | 'violet' | 'teal';
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type TextScale = 'small' | 'normal' | 'large' | 'xlarge';
 
 /**
  * Settings deliberately excludes the GitHub token. The token is a secret
@@ -116,6 +120,7 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export interface Settings {
   themeMode: ThemeMode;
   accent: AccentTheme;
+  textScale: TextScale;
   githubUsername: string | null;
   /** "owner/repo" list chosen to feed the activity feed / issue sync. */
   linkedRepos: string[];

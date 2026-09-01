@@ -6,12 +6,14 @@ import type {
   Project,
   ProjectStatus,
   CalendarEvent,
+  EventRecurrence,
   LogEntry,
   LogSource,
   Idea,
   IdeaStatus,
   AccentTheme,
   ThemeMode,
+  TextScale,
   DateKey,
 } from './types';
 import type { StorageAdapter } from './storage';
@@ -37,6 +39,7 @@ export interface NewEventInput {
   title: string;
   time?: string | null;
   projectId?: string | null;
+  recurrence?: EventRecurrence;
 }
 
 export interface NewLogEntryInput {
@@ -225,6 +228,7 @@ export class WorklightStore {
       title: input.title.trim(),
       time: input.time ?? null,
       projectId: input.projectId ?? null,
+      recurrence: input.recurrence ?? 'none',
       createdAt: new Date().toISOString(),
     };
     const existing = this.state.events[input.date] ?? [];
@@ -357,6 +361,10 @@ export class WorklightStore {
 
   setAccent(accent: AccentTheme): void {
     this.set({ ...this.state, settings: { ...this.state.settings, accent } });
+  }
+
+  setTextScale(textScale: TextScale): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, textScale } });
   }
 
   setLinkedRepos(linkedRepos: string[]): void {

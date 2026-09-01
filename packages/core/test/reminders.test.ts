@@ -6,6 +6,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
   return {
     themeMode: 'system',
     accent: 'amber',
+    textScale: 'normal',
     githubUsername: null,
     linkedRepos: [],
     githubActivitySeenAt: null,
@@ -40,6 +41,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     title: 'test event',
     time: '10:00',
     projectId: null,
+    recurrence: 'none',
     createdAt: '2026-08-30T00:00:00.000Z',
     ...overrides,
   };

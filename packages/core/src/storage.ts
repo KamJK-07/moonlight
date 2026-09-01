@@ -114,6 +114,7 @@ export function createInitialState(): WorklightState {
     settings: {
       themeMode: 'system',
       accent: 'amber',
+      textScale: 'normal',
       githubUsername: null,
       linkedRepos: [],
       githubActivitySeenAt: null,

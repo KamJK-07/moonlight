@@ -5,6 +5,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
   return {
     themeMode: 'system',
     accent: 'amber',
+    textScale: 'normal',
     githubUsername: null,
     linkedRepos: [],
     githubActivitySeenAt: null,
@@ -99,6 +100,7 @@ describe('latestUpdatedAt', () => {
             title: 'event',
             time: null,
             projectId: null,
+            recurrence: 'none',
             createdAt: '2026-08-31T12:00:00.000Z',
           },
         ],
