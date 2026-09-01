@@ -96,6 +96,7 @@ export interface Idea {
   tag: string | null;
   status: IdeaStatus;
   riff: string | null;
+  links: string[];
   starred: boolean;
   archived: boolean;
   createdAt: ISODateTime;

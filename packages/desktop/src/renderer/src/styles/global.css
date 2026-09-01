@@ -244,6 +244,12 @@ button:disabled { opacity: 0.55; cursor: default; }
 .idea-column .group-label { margin: 0; }
 .idea-column .card { margin-bottom: 0; }
 
+.idea-links { margin-top: 0.4rem; }
+.idea-link-list { gap: 0.1rem; margin-bottom: 0.25rem; }
+.idea-link-row { padding: 0.2rem 0.15rem; font-size: 0.78rem; }
+.idea-link { color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.idea-link-add input { width: 100%; font-size: 0.78rem; padding: 0.3rem 0.55rem; }
+
 .gh-status { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 .gh-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--ink-faint); }
 .gh-dot.connected { background: var(--success); }

@@ -273,6 +273,7 @@ export class WorklightStore {
       tag: input.tag?.trim() || null,
       status: 'raw',
       riff: null,
+      links: [],
       starred: false,
       archived: false,
       createdAt: now,
@@ -305,6 +306,32 @@ export class WorklightStore {
       ideas: this.state.ideas.map((i) =>
         i.id === id ? { ...i, starred: starred ?? !i.starred, updatedAt: now } : i,
       ),
+    });
+  }
+
+  addIdeaLink(id: string, url: string): void {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) =>
+        i.id === id ? { ...i, links: [...(i.links ?? []), trimmed], updatedAt: now } : i,
+      ),
+    });
+  }
+
+  removeIdeaLink(id: string, url: string): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) => {
+        if (i.id !== id) return i;
+        const links = [...(i.links ?? [])];
+        const idx = links.indexOf(url);
+        if (idx !== -1) links.splice(idx, 1);
+        return { ...i, links, updatedAt: now };
+      }),
     });
   }
 

@@ -11,6 +11,55 @@ const STATUS_LABEL: Record<IdeaStatus, string> = {
   shipped: 'Shipped',
 };
 
+function IdeaLinks({
+  links,
+  onAdd,
+  onRemove,
+}: {
+  links: string[];
+  onAdd: (url: string) => void;
+  onRemove: (url: string) => void;
+}): React.ReactElement {
+  const [url, setUrl] = useState('');
+
+  function submit(e: React.FormEvent): void {
+    e.preventDefault();
+    if (!url.trim()) return;
+    onAdd(url);
+    setUrl('');
+  }
+
+  return (
+    <div className="idea-links">
+      {links.length > 0 && (
+        <ul className="list idea-link-list">
+          {links.map((link, i) => (
+            <li key={`${link}-${i}`} className="row idea-link-row">
+              <a href={link} target="_blank" rel="noreferrer" className="row-text idea-link">
+                {link}
+              </a>
+              <button className="btn-plain" onClick={() => onRemove(link)} aria-label="Remove link">
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="idea-link-add" onSubmit={submit}>
+        <input
+          type="url"
+          placeholder="Add a reference link…"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+        <button className="btn-plain" type="submit">
+          Add
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const anthropic = useAnthropicSecrets();
@@ -105,6 +154,11 @@ export default function IdeasScreen(): React.ReactElement {
             </option>
           ))}
         </select>
+        <IdeaLinks
+          links={idea.links ?? []}
+          onAdd={(url) => store.addIdeaLink(idea.id, url)}
+          onRemove={(url) => store.removeIdeaLink(idea.id, url)}
+        />
         {idea.riff && (
           <div className="idea-riff" style={{ marginTop: '0.5rem' }}>
             <span className="l">Claude riffed</span>

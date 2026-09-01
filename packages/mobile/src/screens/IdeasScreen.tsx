@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import { sortIdeasByRecency, AnthropicClient, AnthropicApiError, buildRiffPrompt } from '@moonlight/core';
 import type { Idea, IdeaStatus } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
@@ -9,6 +9,58 @@ import Chip from '../components/Chip';
 
 const STATUSES: IdeaStatus[] = ['raw', 'exploring', 'parked', 'shipped'];
 const FILTERS: Array<IdeaStatus | 'all'> = ['all', ...STATUSES];
+
+function IdeaLinks({
+  links,
+  onAdd,
+  onRemove,
+}: {
+  links: string[];
+  onAdd: (url: string) => void;
+  onRemove: (url: string) => void;
+}): React.ReactElement {
+  const theme = useTheme();
+  const [url, setUrl] = useState('');
+
+  function submit(): void {
+    if (!url.trim()) return;
+    onAdd(url);
+    setUrl('');
+  }
+
+  return (
+    <View style={styles.links}>
+      {links.map((link, i) => (
+        <View key={`${link}-${i}`} style={styles.linkRow}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => void Linking.openURL(link).catch(() => {})}>
+            <Text style={{ color: theme.accent, fontSize: 11 }} numberOfLines={1}>
+              {link}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onRemove(link)} hitSlop={8}>
+            <Text style={{ color: theme.inkFaint, fontSize: 13 }}>×</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+      <View style={styles.linkAddRow}>
+        <TextInput
+          style={[styles.linkInput, { borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
+          placeholder="Add a reference link…"
+          placeholderTextColor={theme.inkFaint}
+          value={url}
+          onChangeText={setUrl}
+          onSubmitEditing={submit}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="done"
+        />
+        <TouchableOpacity onPress={submit} hitSlop={8}>
+          <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>Add</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
@@ -156,6 +208,11 @@ export default function IdeasScreen(): React.ReactElement {
               <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '600' }}>→ Project</Text>
             </TouchableOpacity>
           </View>
+          <IdeaLinks
+            links={idea.links ?? []}
+            onAdd={(url) => store.addIdeaLink(idea.id, url)}
+            onRemove={(url) => store.removeIdeaLink(idea.id, url)}
+          />
           {idea.riff && (
             <View style={[styles.riff, { backgroundColor: theme.surface2, borderColor: theme.accent }]}>
               <Text style={{ color: theme.inkFaint, fontSize: 10, marginBottom: 3, letterSpacing: 0.4 }}>CLAUDE RIFFED</Text>
@@ -202,6 +259,10 @@ const styles = StyleSheet.create({
   button: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   ideaHead: { flexDirection: 'row', alignItems: 'flex-start' },
   riff: { borderRadius: 8, borderLeftWidth: 2, padding: 10, marginTop: 6 },
+  links: { gap: 3, marginTop: 4 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  linkAddRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  linkInput: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 12 },
   chipsScroll: { marginBottom: 10 },
   chipsRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
   archivedSection: { marginTop: 8 },

@@ -167,6 +167,56 @@ describe('WorklightStore — ideas', () => {
     store.setIdeaArchived(idea.id, false);
     expect(store.getState().ideas.find((i) => i.id === idea.id)?.archived).toBe(false);
   });
+
+  it('adds a link and notifies subscribers exactly once', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Link me' });
+    const listener = jest.fn();
+    store.subscribe(listener);
+    store.addIdeaLink(idea.id, '  https://example.com  ');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.links).toEqual([
+      'https://example.com',
+    ]);
+  });
+
+  it('does not add a link when the url is empty after trim', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'No link' });
+    store.addIdeaLink(idea.id, '   ');
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.links).toHaveLength(0);
+  });
+
+  it('removing a link removes only the first exact match', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Dupes' });
+    store.addIdeaLink(idea.id, 'https://a.com');
+    store.addIdeaLink(idea.id, 'https://b.com');
+    store.addIdeaLink(idea.id, 'https://a.com');
+    store.removeIdeaLink(idea.id, 'https://a.com');
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.links).toEqual([
+      'https://b.com',
+      'https://a.com',
+    ]);
+  });
+
+  it('does not throw when operating on an idea with no links array at all (old persisted data)', () => {
+    const { store } = freshStore();
+    const idea = store.addIdea({ text: 'Legacy idea' });
+    const state = store.getState();
+    const legacyIdea = { ...state.ideas.find((i) => i.id === idea.id) } as Record<string, unknown>;
+    delete legacyIdea.links;
+    store.replaceState({
+      ...state,
+      ideas: state.ideas.map((i) => (i.id === idea.id ? (legacyIdea as unknown as typeof i) : i)),
+    });
+
+    expect(() => store.addIdeaLink(idea.id, 'https://example.com')).not.toThrow();
+    expect(store.getState().ideas.find((i) => i.id === idea.id)?.links).toEqual([
+      'https://example.com',
+    ]);
+    expect(() => store.removeIdeaLink(idea.id, 'https://example.com')).not.toThrow();
+  });
 });
 
 describe('WorklightStore — calendar events', () => {
