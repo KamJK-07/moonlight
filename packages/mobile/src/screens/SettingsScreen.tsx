@@ -219,6 +219,10 @@ export default function SettingsScreen(): React.ReactElement {
             </TouchableOpacity>
           ))}
         </View>
+        <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 8 }}>
+          Text size follows your device&rsquo;s system text size setting (Settings → Display &amp; Brightness →
+          Text Size on iOS).
+        </Text>
       </Card>
 
       <Card>

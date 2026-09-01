@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { GithubActivityItem } from '@moonlight/core';
+import type { GithubActivityItem, TextScale } from '@moonlight/core';
 import { WorklightProvider, useWorklight } from './store/WorklightContext';
 import { useGithub } from './store/useGithub';
 import { useReminderPoller } from './store/reminders';
@@ -33,6 +33,13 @@ const ACCENTS: Array<{ id: 'amber' | 'violet' | 'teal'; hex: string; label: stri
   { id: 'teal', hex: '#1E8F82', label: 'Teal' },
 ];
 
+const TEXT_SCALE_PX: Record<TextScale, string> = {
+  small: '14px',
+  normal: '16px',
+  large: '18px',
+  xlarge: '20px',
+};
+
 export default function App(): React.ReactElement {
   return (
     <WorklightProvider>
@@ -54,7 +61,8 @@ function Shell(): React.ReactElement {
     const root = document.documentElement;
     if (state.settings.themeMode === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', state.settings.themeMode);
-  }, [state.settings.accent, state.settings.themeMode]);
+    root.style.fontSize = TEXT_SCALE_PX[state.settings.textScale];
+  }, [state.settings.accent, state.settings.themeMode, state.settings.textScale]);
 
   useEffect(() => {
     if (view !== 'projects') setSelectedProjectId(null);

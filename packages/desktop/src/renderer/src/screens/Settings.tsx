@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { serializeState, deserializeState, InvalidStateError, planSync } from '@moonlight/core';
-import type { ThemeMode, AccentTheme, WorklightState } from '@moonlight/core';
+import type { ThemeMode, AccentTheme, TextScale, WorklightState } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 
@@ -16,6 +16,13 @@ const ACCENTS: Array<{ id: AccentTheme; label: string }> = [
   { id: 'amber', label: 'Amber' },
   { id: 'violet', label: 'Violet' },
   { id: 'teal', label: 'Teal' },
+];
+
+const TEXT_SCALES: Array<{ id: TextScale; label: string }> = [
+  { id: 'small', label: 'Small' },
+  { id: 'normal', label: 'Normal' },
+  { id: 'large', label: 'Large' },
+  { id: 'xlarge', label: 'Extra large' },
 ];
 
 export default function SettingsScreen(): React.ReactElement {
@@ -156,7 +163,7 @@ export default function SettingsScreen(): React.ReactElement {
           ))}
         </div>
         <div className="group-label">Accent</div>
-        <div className="form-row" style={{ marginBottom: 0 }}>
+        <div className="form-row" style={{ marginBottom: '0.8rem' }}>
           {ACCENTS.map((a) => (
             <button
               key={a.id}
@@ -164,6 +171,18 @@ export default function SettingsScreen(): React.ReactElement {
               onClick={() => store.setAccent(a.id)}
             >
               {a.label}
+            </button>
+          ))}
+        </div>
+        <div className="group-label">Text size</div>
+        <div className="form-row" style={{ marginBottom: 0 }}>
+          {TEXT_SCALES.map((t) => (
+            <button
+              key={t.id}
+              className={state.settings.textScale === t.id ? 'btn-accent' : ''}
+              onClick={() => store.setTextScale(t.id)}
+            >
+              {t.label}
             </button>
           ))}
         </div>
