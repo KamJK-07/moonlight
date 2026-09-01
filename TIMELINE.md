@@ -256,4 +256,54 @@ Commits: [`21353be`](https://github.com/KamJK-07/moonlight/commit/21353be)
 
 ---
 
+## 2026-09-01 — Project detail view, PR indicators, calendar week view, GitHub badge
+
+**What**: The highest-risk batch of the session — one item involved
+restructuring mobile navigation, so it ran as its own careful review
+rather than being lumped in with lighter changes:
+- Projects §4 + GitHub §7: `[ ] Project detail view` and
+  `[ ] PR status indicators surfaced on linked projects` → both `[x]`.
+  Mobile's Projects tab became a nested stack (`ProjectsHome` +
+  `ProjectDetail`), mirroring the existing `MoreStack` pattern exactly;
+  desktop got equivalent state-based routing in `Shell` (no router
+  library added). The detail view shows a project's header, open PRs,
+  GitHub activity (both scoped to just that project's repo), its tasks,
+  and its log entries, all in one place. The Projects list also gained
+  an open-PR-count pill per project.
+- Calendar §2: `[ ] Week view toggle` → `[x]` — a Month/Week toggle,
+  reusing a new `weekDates` core helper built on the existing
+  `startOfWeek`.
+- GitHub §7: `[ ] New-activity badge since last visit` → `[x]` —
+  `Settings.githubActivitySeenAt` + a small dot in the nav when
+  there's unseen activity.
+
+**How**: Three agents dispatched in parallel, the first time this
+session three ran concurrently. Two of the three touched
+`packages/desktop/src/renderer/src/App.tsx` (project-detail routing
+and the GitHub badge dot) — they applied cleanly on top of each other
+with no conflict since they touched disjoint lines, confirmed by
+reading the merged diff by hand rather than assuming it was fine. The
+navigation restructuring got the most scrutiny of anything this
+session: re-read `RootNavigator.tsx`'s typed param lists line by line
+against the precedented `MoreStack` pattern, traced that the new
+`ProjectsStack`'s `Tab.Screen` entry still satisfies `TabParamList`,
+and ran `expo export` for *both* `ios` and `android` (not just ios)
+given the stakes. Also traced through `fetchActivityFeed` (which
+already folds in PRs) alongside the new dedicated open-PR fetch and
+confirmed the resulting UI overlap (an open PR can appear in both the
+"Open pull requests" and "GitHub activity" cards) is cosmetic
+redundancy, not a bug.
+
+**Verified**: `lint`, `typecheck`, `test` (47/47), desktop build, and
+`expo export` for **both** `ios` and `android` all clean — re-run after
+combining all three agents' changes and again after splitting into
+three separate commits, since `App.tsx` needed care to get right.
+
+Commits: [`8770563`](https://github.com/KamJK-07/moonlight/commit/8770563)
+(project detail + PR indicators), [`6c59a96`](https://github.com/KamJK-07/moonlight/commit/6c59a96)
+(calendar week view), [`9cfd2e8`](https://github.com/KamJK-07/moonlight/commit/9cfd2e8)
+(GitHub activity badge).
+
+---
+
 <!-- New entries append below this line. -->

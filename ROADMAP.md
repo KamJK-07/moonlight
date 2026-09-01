@@ -27,7 +27,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Month grid with event dots
 - [x] Tap a day → agenda list + add/edit/delete event
 - [x] Jump-to-today
-- [ ] Week view toggle
+- [x] Week view toggle
 - [ ] Recurring events (daily/weekly/monthly)
 - [ ] Local notification reminders for upcoming events
 - [x] Project-linked events — picker in the add-event form, shown as a tag on each event
@@ -55,7 +55,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Progress bar computed from linked tasks
 - [x] Notes field
 - [x] Link project → GitHub repo — picker sourced from Settings' linked repos
-- [ ] Project detail view: tasks + log entries + GitHub activity in one place
+- [x] Project detail view: tasks + log entries + GitHub activity in one place
 - [x] Archive completed projects — Archive action + a restore list
 - [x] Color tag per project — swatch picker, shared palette in core
 
@@ -89,8 +89,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Recent commit/PR/issue activity feed
 - [x] Create a new Issue directly from the app (both platforms)
 - [~] Task ↔ Issue sync — see Tasks section above; import direction works
-- [ ] PR status indicators surfaced on linked projects
-- [ ] New-activity badge since last visit
+- [x] PR status indicators surfaced on linked projects
+- [x] New-activity badge since last visit
 
 ## 8. Settings & system-wide
 
