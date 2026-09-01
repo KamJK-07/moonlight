@@ -430,4 +430,35 @@ Commit: [`c535d06`](https://github.com/KamJK-07/moonlight/commit/c535d06)
 
 ---
 
+## 2026-09-01 — Global quick-add, GitHub milestones, commit auto-log
+
+**What**: Three more items closed out:
+- Today §1: `[ ] Global quick-add` → `[x]` — a FAB open from any screen,
+  type-picker → single-field form → the same `store.add*` calls each
+  screen's own full form already uses.
+- Calendar §2: `[ ] GitHub milestones surfaced on the calendar` →
+  `[x]` — a new `GithubClient.listMilestones`, a second dot on day
+  cells, a labeled row in the agenda panel.
+- Progress log §5: `[ ] Auto-entry from GitHub commits` → `[x]` — a
+  manual "Sync commits to log" action, cursor-based dedup via a new
+  `Settings.lastCommitLogSyncAt`, one log entry per commit (not an
+  aggregated summary — more useful that way).
+
+**How**: Two agents in parallel — one on the app-shell/navigation files
+for quick-add, one on `github.ts` + Calendar + GitHub screens for the
+other two (bundled together since both needed new `GithubClient`
+methods, keeping edits to that file in one place rather than risking
+two agents on it at once). Both were explicitly told to stay out of
+each other's files. Reviewed by hand, then independently re-verified
+on the combined tree.
+
+**Verified**: `lint`, `typecheck`, `test` (56/56), desktop build, and
+`expo export --platform ios` all clean.
+
+Commits: [`30e3ad9`](https://github.com/KamJK-07/moonlight/commit/30e3ad9)
+(milestones + commit log), [`49a4173`](https://github.com/KamJK-07/moonlight/commit/49a4173)
+(quick-add).
+
+---
+
 <!-- New entries append below this line. -->

@@ -20,7 +20,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Today's calendar events at a glance
 - [x] Quick progress-log capture inline, no tab switch
 - [x] GitHub activity snippet (latest commit/PR today)
-- [ ] Global quick-add (task/event/log/idea from one button, any screen)
+- [x] Global quick-add (task/event/log/idea from one button, any screen)
 
 ## 2. Calendar
 
@@ -31,7 +31,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [ ] Recurring events (daily/weekly/monthly)
 - [x] Local notification reminders for upcoming events
 - [x] Project-linked events — picker in the add-event form, shown as a tag on each event
-- [ ] GitHub milestones surfaced on the calendar
+- [x] GitHub milestones surfaced on the calendar
 
 ## 3. Tasks
 
@@ -67,7 +67,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Quick-log from Today
 - [x] Group entries by week/month, weekly digest view
 - [x] Attach a log entry to a specific project — picker in the add-entry form, shown as a tag on each entry
-- [ ] Auto-entry from GitHub commits ("shipped 4 commits to moonlight")
+- [x] Auto-entry from GitHub commits — manual "Sync commits to log"
+      action on the GitHub screen, one entry per commit
 
 ## 6. Creative hub (ideas)
 
