@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import {
   todayKey,
@@ -10,7 +10,9 @@ import {
   addDays,
   weekDates,
 } from '@moonlight/core';
+import type { GithubMilestone } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import Pill from '../components/Pill';
@@ -42,6 +44,7 @@ function fmtLong(dateKey: string): string {
 export default function CalendarScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const theme = useTheme();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const today = todayKey();
   const [month, setMonth] = useState(yearMonthOf(today));
   const [selected, setSelected] = useState(today);
@@ -49,10 +52,46 @@ export default function CalendarScreen(): React.ReactElement {
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [milestonesByRepo, setMilestonesByRepo] = useState<Record<string, GithubMilestone[]>>({});
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
   }
+
+  const reposWithGithub = useMemo(
+    () => Array.from(new Set(state.projects.map((p) => p.githubRepo).filter((r): r is string => !!r))),
+    [state.projects],
+  );
+
+  useEffect(() => {
+    if (githubStatus !== 'connected' || !githubClient || reposWithGithub.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      reposWithGithub.map((repo) =>
+        githubClient
+          .listMilestones(repo, 'open')
+          .then((ms) => [repo, ms] as const)
+          .catch(() => [repo, []] as const),
+      ),
+    ).then((pairs) => {
+      if (!cancelled) setMilestonesByRepo(Object.fromEntries(pairs));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubStatus, githubClient, reposWithGithub]);
+
+  const milestonesByDate = useMemo(() => {
+    const map: Record<string, GithubMilestone[]> = {};
+    for (const list of Object.values(milestonesByRepo)) {
+      for (const m of list) {
+        if (!m.dueOn) continue;
+        const key = m.dueOn.slice(0, 10);
+        (map[key] ??= []).push(m);
+      }
+    }
+    return map;
+  }, [milestonesByRepo]);
 
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
@@ -84,6 +123,7 @@ export default function CalendarScreen(): React.ReactElement {
 
   function dayCell(key: string, label: number) {
     const has = (state.events[key]?.length ?? 0) > 0;
+    const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
     return (
@@ -99,7 +139,10 @@ export default function CalendarScreen(): React.ReactElement {
           ]}
         >
           <Text style={{ color: isToday ? theme.accent : theme.inkSoft, fontSize: 12, fontWeight: isToday ? '700' : '400' }}>{label}</Text>
-          {has && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
+          <View style={styles.dotsRow}>
+            {has && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
+            {hasMilestone && <View style={[styles.dot, { backgroundColor: theme.warning }]} />}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -114,6 +157,7 @@ export default function CalendarScreen(): React.ReactElement {
   }
 
   const selectedEvents = eventsForDate(state.events, selected);
+  const selectedMilestones = milestonesByDate[selected] ?? [];
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -140,7 +184,13 @@ export default function CalendarScreen(): React.ReactElement {
 
       <Card>
         <Text style={{ color: theme.inkSoft, fontSize: 12, marginBottom: 8 }}>{fmtLong(selected)}</Text>
-        {selectedEvents.length === 0 && <Text style={{ color: theme.inkFaint }}>No events yet.</Text>}
+        {selectedMilestones.map((m) => (
+          <View key={m.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
+            <Text style={{ color: theme.ink, flex: 1 }}>🎯 {m.title}</Text>
+            <Pill label="milestone" tone="warning" />
+          </View>
+        ))}
+        {selectedEvents.length === 0 && selectedMilestones.length === 0 && <Text style={{ color: theme.inkFaint }}>No events yet.</Text>}
         {selectedEvents.map((ev) => {
           const evProject = projectOf(ev.projectId);
           return (
@@ -194,7 +244,8 @@ const styles = StyleSheet.create({
   dow: { textAlign: 'center', fontSize: 11 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { flex: 1, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', margin: 1 },
-  dot: { width: 4, height: 4, borderRadius: 2, position: 'absolute', bottom: 3 },
+  dotsRow: { position: 'absolute', bottom: 3, flexDirection: 'row', gap: 3 },
+  dot: { width: 4, height: 4, borderRadius: 2 },
   eventRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   addRow: { flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 8 },

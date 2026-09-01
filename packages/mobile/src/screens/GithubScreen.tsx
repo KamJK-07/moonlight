@@ -19,6 +19,8 @@ export default function GithubScreen(): React.ReactElement {
   const [issueRepo, setIssueRepo] = useState('');
   const [issueTitle, setIssueTitle] = useState('');
   const [creatingIssue, setCreatingIssue] = useState(false);
+  const [syncingCommits, setSyncingCommits] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'connected' && client) {
@@ -53,6 +55,26 @@ export default function GithubScreen(): React.ReactElement {
       store.setGithubActivitySeenAt(new Date().toISOString());
     } finally {
       setActivityLoading(false);
+    }
+  }
+
+  async function syncCommitsToLog() {
+    if (!client || state.settings.linkedRepos.length === 0) return;
+    setSyncingCommits(true);
+    setSyncStatus(null);
+    try {
+      const since = state.settings.lastCommitLogSyncAt;
+      const perRepo = await Promise.all(
+        state.settings.linkedRepos.map((repo) => client.listRecentCommits(repo, 20).catch(() => [])),
+      );
+      const commits = perRepo.flat().filter((c) => !since || c.date > since);
+      for (const c of commits) {
+        store.addLogEntry({ text: c.title, date: c.date.slice(0, 10), source: 'github' });
+      }
+      store.setLastCommitLogSyncAt(new Date().toISOString());
+      setSyncStatus(commits.length > 0 ? `Added ${commits.length} entr${commits.length === 1 ? 'y' : 'ies'}.` : 'Up to date.');
+    } finally {
+      setSyncingCommits(false);
     }
   }
 
@@ -153,6 +175,16 @@ export default function GithubScreen(): React.ReactElement {
           </View>
         ))}
       </Card>
+
+      {state.settings.linkedRepos.length > 0 && (
+        <Card>
+          <Text style={[styles.title, { color: theme.ink }]}>Progress log</Text>
+          <TouchableOpacity onPress={() => void syncCommitsToLog()} disabled={syncingCommits}>
+            <Text style={{ color: theme.accent, fontWeight: '600' }}>{syncingCommits ? 'Syncing…' : 'Sync commits to log'}</Text>
+          </TouchableOpacity>
+          {syncStatus && <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 6 }}>{syncStatus}</Text>}
+        </Card>
+      )}
 
       <Card>
         <Text style={[styles.title, { color: theme.ink }]}>Create an issue</Text>

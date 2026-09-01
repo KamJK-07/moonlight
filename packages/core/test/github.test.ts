@@ -82,6 +82,21 @@ describe('GithubClient', () => {
     expect(feed.map((item) => item.title)).toEqual(['New PR', 'Old commit']);
   });
 
+  it('maps milestone responses into GithubMilestone', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      jsonResponse([
+        { id: 9, title: 'v1.0', due_on: '2026-09-15T07:00:00Z', html_url: 'm1', open_issues: 2, closed_issues: 1 },
+        { id: 10, title: 'Backlog', due_on: null, html_url: 'm2', open_issues: 3, closed_issues: 0 },
+      ]),
+    );
+    const client = new GithubClient('t', fetchMock);
+    const milestones = await client.listMilestones('kameron/worklight');
+    expect(milestones).toEqual([
+      { id: '9', title: 'v1.0', dueOn: '2026-09-15T07:00:00Z', url: 'm1', repo: 'kameron/worklight' },
+      { id: '10', title: 'Backlog', dueOn: null, url: 'm2', repo: 'kameron/worklight' },
+    ]);
+  });
+
   it('does not let one failing repo take down the whole activity feed', async () => {
     const fetchMock = jest.fn().mockImplementation((url: string) => {
       if (url.includes('good-repo')) {

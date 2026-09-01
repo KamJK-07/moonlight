@@ -47,6 +47,14 @@ export interface GithubIssueSummary {
   body: string | null;
 }
 
+export interface GithubMilestone {
+  id: string;
+  title: string;
+  dueOn: string | null; // ISO date, or null if the milestone has no due date
+  url: string;
+  repo: string;
+}
+
 interface FetchLike {
   (input: string, init?: RequestInit): Promise<Response>;
 }
@@ -145,6 +153,13 @@ export class GithubClient {
     return issues
       .filter((i) => !i.pull_request)
       .map((i) => ({ number: i.number, title: i.title, state: i.state, url: i.html_url, body: i.body }));
+  }
+
+  async listMilestones(fullName: string, state: 'open' | 'closed' | 'all' = 'open'): Promise<GithubMilestone[]> {
+    const milestones = await this.request<
+      Array<{ id: number; title: string; due_on: string | null; html_url: string; open_issues: number; closed_issues: number }>
+    >(`/repos/${fullName}/milestones?state=${state}`);
+    return milestones.map((m) => ({ id: String(m.id), title: m.title, dueOn: m.due_on, url: m.html_url, repo: fullName }));
   }
 
   async createIssue(fullName: string, title: string, body?: string): Promise<GithubIssueSummary> {

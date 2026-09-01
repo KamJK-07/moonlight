@@ -117,6 +117,7 @@ export function createInitialState(): WorklightState {
       githubUsername: null,
       linkedRepos: [],
       githubActivitySeenAt: null,
+      lastCommitLogSyncAt: null,
       remindersEnabled: false,
       reminderMinutesBefore: 30,
     },

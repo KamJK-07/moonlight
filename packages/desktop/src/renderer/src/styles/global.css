@@ -216,6 +216,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 .pill.open { background: var(--success-soft); color: var(--success); }
 .pill.closed { background: var(--surface-2); color: var(--ink-soft); }
 .pill.merged { background: var(--accent-soft); color: var(--ink); }
+.pill.milestone { background: var(--warning-soft); color: var(--warning); }
 
 .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.8rem; }
 .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem; display: flex; flex-direction: column; gap: 0.55rem; }
@@ -236,7 +237,9 @@ button:disabled { opacity: 0.55; cursor: default; }
 .cal-cell.selected { background: var(--accent-soft); }
 .cal-daynum { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft); }
 .cal-cell.today .cal-daynum { color: var(--accent); font-weight: 600; }
-.cal-dot { width: 0.28rem; height: 0.28rem; border-radius: 50%; background: var(--accent); align-self: flex-end; margin-top: auto; }
+.cal-dots { display: flex; gap: 0.15rem; align-self: flex-end; margin-top: auto; }
+.cal-dot { width: 0.28rem; height: 0.28rem; border-radius: 50%; background: var(--accent); }
+.cal-dot.milestone { background: var(--warning); }
 
 .idea-riff { background: var(--surface-2); border-left: 2px solid var(--accent); padding: 0.55rem 0.7rem; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: var(--ink-soft); }
 .idea-riff .l { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 0.2rem; }

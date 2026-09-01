@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, eventsForDate, addDays, weekDates } from '@moonlight/core';
+import type { GithubMilestone } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 
 const DOW_MONTH = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DOW_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -29,6 +31,7 @@ function fmtLong(dateKey: string): string {
 
 export default function CalendarScreen(): React.ReactElement {
   const { state, store } = useWorklight();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const today = todayKey();
   const [month, setMonth] = useState(yearMonthOf(today));
   const [selected, setSelected] = useState(today);
@@ -36,10 +39,46 @@ export default function CalendarScreen(): React.ReactElement {
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [milestonesByRepo, setMilestonesByRepo] = useState<Record<string, GithubMilestone[]>>({});
 
   function projectOf(id: string | null) {
     return id ? state.projects.find((p) => p.id === id) : undefined;
   }
+
+  const reposWithGithub = useMemo(
+    () => Array.from(new Set(state.projects.map((p) => p.githubRepo).filter((r): r is string => !!r))),
+    [state.projects],
+  );
+
+  useEffect(() => {
+    if (githubStatus !== 'connected' || !githubClient || reposWithGithub.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      reposWithGithub.map((repo) =>
+        githubClient
+          .listMilestones(repo, 'open')
+          .then((ms) => [repo, ms] as const)
+          .catch(() => [repo, []] as const),
+      ),
+    ).then((pairs) => {
+      if (!cancelled) setMilestonesByRepo(Object.fromEntries(pairs));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [githubStatus, githubClient, reposWithGithub]);
+
+  const milestonesByDate = useMemo(() => {
+    const map: Record<string, GithubMilestone[]> = {};
+    for (const list of Object.values(milestonesByRepo)) {
+      for (const m of list) {
+        if (!m.dueOn) continue;
+        const key = m.dueOn.slice(0, 10);
+        (map[key] ??= []).push(m);
+      }
+    }
+    return map;
+  }, [milestonesByRepo]);
 
   const [y, m] = month.split('-').map(Number);
   const year = y ?? 2026;
@@ -75,6 +114,7 @@ export default function CalendarScreen(): React.ReactElement {
 
   function dayCell(key: string, label: number) {
     const has = (state.events[key]?.length ?? 0) > 0;
+    const hasMilestone = (milestonesByDate[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
     return (
@@ -84,7 +124,10 @@ export default function CalendarScreen(): React.ReactElement {
         onClick={() => pickDay(key)}
       >
         <span className="cal-daynum">{label}</span>
-        {has && <span className="cal-dot" />}
+        <span className="cal-dots">
+          {has && <span className="cal-dot" />}
+          {hasMilestone && <span className="cal-dot milestone" />}
+        </span>
       </button>
     );
   }
@@ -100,6 +143,7 @@ export default function CalendarScreen(): React.ReactElement {
   }
 
   const selectedEvents = eventsForDate(state.events, selected);
+  const selectedMilestones = milestonesByDate[selected] ?? [];
 
   return (
     <div>
@@ -143,7 +187,13 @@ export default function CalendarScreen(): React.ReactElement {
           {fmtLong(selected)}
         </div>
         <ul className="list">
-          {selectedEvents.length === 0 && <li className="empty">No events yet.</li>}
+          {selectedMilestones.map((m) => (
+            <li key={m.id} className="row">
+              <span className="row-text">🎯 {m.title}</span>
+              <span className="pill milestone">milestone</span>
+            </li>
+          ))}
+          {selectedEvents.length === 0 && selectedMilestones.length === 0 && <li className="empty">No events yet.</li>}
           {selectedEvents.map((ev) => {
             const evProject = projectOf(ev.projectId);
             return (

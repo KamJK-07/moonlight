@@ -7,6 +7,7 @@ import type {
   ProjectStatus,
   CalendarEvent,
   LogEntry,
+  LogSource,
   Idea,
   IdeaStatus,
   AccentTheme,
@@ -42,6 +43,7 @@ export interface NewLogEntryInput {
   date?: DateKey;
   text: string;
   projectId?: string | null;
+  source?: LogSource;
 }
 
 export interface NewIdeaInput {
@@ -252,7 +254,7 @@ export class WorklightStore {
       date: input.date ?? todayKey(),
       text: input.text.trim(),
       projectId: input.projectId ?? null,
-      source: 'manual',
+      source: input.source ?? 'manual',
       createdAt: new Date().toISOString(),
     };
     this.set({ ...this.state, logEntries: [...this.state.logEntries, entry] });
@@ -367,6 +369,10 @@ export class WorklightStore {
 
   setGithubActivitySeenAt(timestamp: string): void {
     this.set({ ...this.state, settings: { ...this.state.settings, githubActivitySeenAt: timestamp } });
+  }
+
+  setLastCommitLogSyncAt(timestamp: string): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, lastCommitLogSyncAt: timestamp } });
   }
 
   setRemindersEnabled(enabled: boolean): void {

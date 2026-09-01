@@ -9,6 +9,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
     githubUsername: null,
     linkedRepos: [],
     githubActivitySeenAt: null,
+    lastCommitLogSyncAt: null,
     remindersEnabled: true,
     reminderMinutesBefore: 30,
     ...overrides,

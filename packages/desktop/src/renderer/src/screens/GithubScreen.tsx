@@ -14,6 +14,8 @@ export default function GithubScreen(): React.ReactElement {
   const [issueRepo, setIssueRepo] = useState('');
   const [issueTitle, setIssueTitle] = useState('');
   const [openIssues, setOpenIssues] = useState<GithubIssueSummary[] | null>(null);
+  const [syncingCommits, setSyncingCommits] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (status !== 'connected' || !client) return;
@@ -52,6 +54,26 @@ export default function GithubScreen(): React.ReactElement {
       store.setGithubActivitySeenAt(new Date().toISOString());
     } finally {
       setActivityLoading(false);
+    }
+  }
+
+  async function syncCommitsToLog() {
+    if (!client || state.settings.linkedRepos.length === 0) return;
+    setSyncingCommits(true);
+    setSyncStatus(null);
+    try {
+      const since = state.settings.lastCommitLogSyncAt;
+      const perRepo = await Promise.all(
+        state.settings.linkedRepos.map((repo) => client.listRecentCommits(repo, 20).catch(() => [])),
+      );
+      const commits = perRepo.flat().filter((c) => !since || c.date > since);
+      for (const c of commits) {
+        store.addLogEntry({ text: c.title, date: c.date.slice(0, 10), source: 'github' });
+      }
+      store.setLastCommitLogSyncAt(new Date().toISOString());
+      setSyncStatus(commits.length > 0 ? `Added ${commits.length} entr${commits.length === 1 ? 'y' : 'ies'}.` : 'Up to date.');
+    } finally {
+      setSyncingCommits(false);
     }
   }
 
@@ -167,6 +189,16 @@ export default function GithubScreen(): React.ReactElement {
           </ul>
         )}
       </div>
+
+      {state.settings.linkedRepos.length > 0 && (
+        <div className="card">
+          <h3>Progress log</h3>
+          <button className="btn-plain" onClick={() => void syncCommitsToLog()} disabled={syncingCommits}>
+            {syncingCommits ? 'Syncing…' : 'Sync commits to log'}
+          </button>
+          {syncStatus && <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)' }}>{syncStatus}</p>}
+        </div>
+      )}
 
       <div className="card">
         <h3>Create an issue</h3>
