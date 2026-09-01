@@ -40,7 +40,7 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Grouped view: overdue / today / upcoming / no date / done
 - [x] Priority levels with visual indicator
 - [ ] Search & filter
-- [ ] Subtasks / checklist within a task
+- [x] Subtasks / checklist within a task
 - [ ] Push notification reminders
 - [~] Link task ↔ GitHub Issue — importing an open Issue as a task works
       (stores the `githubIssue` ref); it isn't yet *two-way* — completing
@@ -54,12 +54,10 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] Status pill (active / paused / done)
 - [x] Progress bar computed from linked tasks
 - [x] Notes field
-- [~] Link project → GitHub repo — `githubRepo` field exists and renders
-      as a tag when set; no UI to set it yet
+- [x] Link project → GitHub repo — picker sourced from Settings' linked repos
 - [ ] Project detail view: tasks + log entries + GitHub activity in one place
-- [~] Archive completed projects — `archived` field and the filter both
-      exist; no UI action sets it (only hard delete does)
-- [~] Color tag per project — `color` field exists, unused in the UI
+- [x] Archive completed projects — Archive action + a restore list
+- [x] Color tag per project — swatch picker, shared palette in core
 
 ## 5. Progress log
 
@@ -76,8 +74,8 @@ data model and part of the feature exist but the UI isn't wired up yet.
 - [x] "Ask Claude to riff" — real Anthropic API call (not a stub), on
       both platforms; needs an API key connected in Settings
 - [ ] Convert an idea → Project or Task in one tap
-- [~] Board view by status — `IdeaStatus` (raw/exploring/parked/shipped)
-      exists on the type; no UI to change or filter by it
+- [x] Board view by status — kanban columns on desktop, filter chips + a
+      per-idea status selector on mobile
 - [ ] Attach reference links/images
 - [ ] Search/filter by tag
 - [ ] Star / archive favorites
