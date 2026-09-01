@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, eventsForDate } from '@moonlight/core';
+import { todayKey, dateKeyFrom, daysInMonth, firstWeekdayOfMonth, yearMonthOf, eventsForDate, addDays, weekDates } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 
-const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DOW_MONTH = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DOW_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function monthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);
   return new Date(y ?? 2026, (m ?? 1) - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+function fmtShort(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function weekLabel(dates: string[]): string {
+  return `${fmtShort(dates[0] ?? '')} – ${fmtShort(dates[6] ?? '')}`;
 }
 
 function fmtLong(dateKey: string): string {
@@ -24,6 +32,7 @@ export default function CalendarScreen(): React.ReactElement {
   const today = todayKey();
   const [month, setMonth] = useState(yearMonthOf(today));
   const [selected, setSelected] = useState(today);
+  const [view, setView] = useState<'month' | 'week'>('month');
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -51,6 +60,10 @@ export default function CalendarScreen(): React.ReactElement {
     setMonth(yearMonthOf(dateKey));
   }
 
+  function shiftWeek(delta: number) {
+    pickDay(addDays(selected, delta * 7));
+  }
+
   function submitEvent(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -60,25 +73,30 @@ export default function CalendarScreen(): React.ReactElement {
     setProjectId('');
   }
 
-  const cells: React.ReactElement[] = [];
-  for (let i = 0; i < startDow; i++) {
-    cells.push(<div key={`empty-${i}`} className="cal-cell empty-cell" />);
-  }
-  for (let d = 1; d <= total; d++) {
-    const key = dateKeyFrom(year, monthNum, d);
+  function dayCell(key: string, label: number) {
     const has = (state.events[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
-    cells.push(
+    return (
       <button
         key={key}
         className={`cal-cell${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`}
         onClick={() => pickDay(key)}
       >
-        <span className="cal-daynum">{d}</span>
+        <span className="cal-daynum">{label}</span>
         {has && <span className="cal-dot" />}
-      </button>,
+      </button>
     );
+  }
+
+  const cells: React.ReactElement[] = [];
+  if (view === 'week') {
+    for (const key of weekDates(selected)) cells.push(dayCell(key, Number(key.slice(-2))));
+  } else {
+    for (let i = 0; i < startDow; i++) {
+      cells.push(<div key={`empty-${i}`} className="cal-cell empty-cell" />);
+    }
+    for (let d = 1; d <= total; d++) cells.push(dayCell(dateKeyFrom(year, monthNum, d), d));
   }
 
   const selectedEvents = eventsForDate(state.events, selected);
@@ -86,24 +104,32 @@ export default function CalendarScreen(): React.ReactElement {
   return (
     <div>
       <div className="card">
+        <div className="cal-view-toggle">
+          <button className={`btn-plain${view === 'month' ? ' active' : ''}`} onClick={() => setView('month')}>
+            Month
+          </button>
+          <button className={`btn-plain${view === 'week' ? ' active' : ''}`} onClick={() => setView('week')}>
+            Week
+          </button>
+        </div>
         <div className="cal-head">
-          <button className="btn-plain" onClick={() => shiftMonth(-1)}>
+          <button className="btn-plain" onClick={() => (view === 'week' ? shiftWeek(-1) : shiftMonth(-1))}>
             &larr; Prev
           </button>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
-            <strong style={{ fontFamily: 'var(--font-display)' }}>{monthLabel(month)}</strong>
+            <strong style={{ fontFamily: 'var(--font-display)' }}>{view === 'week' ? weekLabel(weekDates(selected)) : monthLabel(month)}</strong>
             {month !== yearMonthOf(today) && (
               <button className="btn-plain" onClick={() => pickDay(today)}>
                 Today
               </button>
             )}
           </div>
-          <button className="btn-plain" onClick={() => shiftMonth(1)}>
+          <button className="btn-plain" onClick={() => (view === 'week' ? shiftWeek(1) : shiftMonth(1))}>
             Next &rarr;
           </button>
         </div>
         <div className="cal-grid">
-          {DOW.map((d) => (
+          {(view === 'week' ? DOW_WEEK : DOW_MONTH).map((d) => (
             <div key={d} className="cal-dow">
               {d}
             </div>

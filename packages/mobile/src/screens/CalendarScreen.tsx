@@ -7,18 +7,28 @@ import {
   firstWeekdayOfMonth,
   yearMonthOf,
   eventsForDate,
+  addDays,
+  weekDates,
 } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import Pill from '../components/Pill';
 
-const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DOW_MONTH = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DOW_WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const CELL_WIDTH = `${100 / 7}%`;
 
 function monthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);
   return new Date(y ?? 2026, (m ?? 1) - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+function fmtShort(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function weekLabel(dates: string[]): string {
+  return `${fmtShort(dates[0] ?? '')} – ${fmtShort(dates[6] ?? '')}`;
 }
 function fmtLong(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -35,6 +45,7 @@ export default function CalendarScreen(): React.ReactElement {
   const today = todayKey();
   const [month, setMonth] = useState(yearMonthOf(today));
   const [selected, setSelected] = useState(today);
+  const [view, setView] = useState<'month' | 'week'>('month');
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -57,6 +68,12 @@ export default function CalendarScreen(): React.ReactElement {
     setMonth(`${newYear}-${String(newMonth).padStart(2, '0')}`);
   }
 
+  function shiftWeek(delta: number) {
+    const next = addDays(selected, delta * 7);
+    setSelected(next);
+    setMonth(yearMonthOf(next));
+  }
+
   function submitEvent() {
     if (!title.trim()) return;
     store.addEvent({ date: selected, title, time: time || null, projectId });
@@ -65,14 +82,11 @@ export default function CalendarScreen(): React.ReactElement {
     setProjectId(null);
   }
 
-  const cells: React.ReactElement[] = [];
-  for (let i = 0; i < startDow; i++) cells.push(<View key={`e${i}`} style={{ width: CELL_WIDTH, aspectRatio: 1 }} />);
-  for (let d = 1; d <= total; d++) {
-    const key = dateKeyFrom(year, monthNum, d);
+  function dayCell(key: string, label: number) {
     const has = (state.events[key]?.length ?? 0) > 0;
     const isToday = key === today;
     const isSelected = key === selected;
-    cells.push(
+    return (
       <TouchableOpacity
         key={key}
         style={{ width: CELL_WIDTH, aspectRatio: 1, padding: 2 }}
@@ -84,11 +98,19 @@ export default function CalendarScreen(): React.ReactElement {
             { backgroundColor: isSelected ? theme.accentSoft : theme.surface2, borderColor: isToday ? theme.accent : 'transparent' },
           ]}
         >
-          <Text style={{ color: isToday ? theme.accent : theme.inkSoft, fontSize: 12, fontWeight: isToday ? '700' : '400' }}>{d}</Text>
+          <Text style={{ color: isToday ? theme.accent : theme.inkSoft, fontSize: 12, fontWeight: isToday ? '700' : '400' }}>{label}</Text>
           {has && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
         </View>
-      </TouchableOpacity>,
+      </TouchableOpacity>
     );
+  }
+
+  const cells: React.ReactElement[] = [];
+  if (view === 'week') {
+    for (const key of weekDates(selected)) cells.push(dayCell(key, Number(key.slice(-2))));
+  } else {
+    for (let i = 0; i < startDow; i++) cells.push(<View key={`e${i}`} style={{ width: CELL_WIDTH, aspectRatio: 1 }} />);
+    for (let d = 1; d <= total; d++) cells.push(dayCell(dateKeyFrom(year, monthNum, d), d));
   }
 
   const selectedEvents = eventsForDate(state.events, selected);
@@ -96,16 +118,20 @@ export default function CalendarScreen(): React.ReactElement {
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
       <Card>
+        <View style={styles.viewToggle}>
+          <Chip label="Month" selected={view === 'month'} onPress={() => setView('month')} />
+          <Chip label="Week" selected={view === 'week'} onPress={() => setView('week')} />
+        </View>
         <View style={styles.calHead}>
-          <TouchableOpacity onPress={() => shiftMonth(-1)}><Text style={{ color: theme.inkSoft }}>← Prev</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => (view === 'week' ? shiftWeek(-1) : shiftMonth(-1))}><Text style={{ color: theme.inkSoft }}>← Prev</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => { setSelected(today); setMonth(yearMonthOf(today)); }}>
-            <Text style={{ color: theme.ink, fontWeight: '600' }}>{monthLabel(month)}</Text>
+            <Text style={{ color: theme.ink, fontWeight: '600' }}>{view === 'week' ? weekLabel(weekDates(selected)) : monthLabel(month)}</Text>
             {month !== yearMonthOf(today) && <Text style={{ color: theme.accent, fontSize: 11, textAlign: 'center' }}>Jump to today</Text>}
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => shiftMonth(1)}><Text style={{ color: theme.inkSoft }}>Next →</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => (view === 'week' ? shiftWeek(1) : shiftMonth(1))}><Text style={{ color: theme.inkSoft }}>Next →</Text></TouchableOpacity>
         </View>
         <View style={styles.dowRow}>
-          {DOW.map((d, i) => (
+          {(view === 'week' ? DOW_WEEK : DOW_MONTH).map((d, i) => (
             <Text key={i} style={[styles.dow, { color: theme.inkFaint, width: CELL_WIDTH }]}>{d}</Text>
           ))}
         </View>
@@ -162,6 +188,7 @@ export default function CalendarScreen(): React.ReactElement {
 
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
+  viewToggle: { flexDirection: 'row', marginBottom: 10 },
   calHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   dowRow: { flexDirection: 'row' },
   dow: { textAlign: 'center', fontSize: 11 },

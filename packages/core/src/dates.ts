@@ -34,6 +34,12 @@ export function startOfWeek(key: DateKey): DateKey {
   return addDays(key, dow === 0 ? -6 : 1 - dow);
 }
 
+/** The 7 DateKeys (Monday..Sunday) of the week containing the given date. */
+export function weekDates(key: DateKey): DateKey[] {
+  const start = startOfWeek(key);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
 export function yearMonthOf(key: DateKey): string {
   return key.slice(0, 7);
 }
