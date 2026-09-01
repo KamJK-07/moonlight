@@ -18,6 +18,7 @@ export default function IdeasScreen(): React.ReactElement {
   const [riffError, setRiffError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [filter, setFilter] = useState<IdeaStatus | 'all'>('all');
+  const [tagQuery, setTagQuery] = useState('');
 
   useEffect(() => {
     void anthropicSecretStore.has().then(setHasKey);
@@ -52,7 +53,11 @@ export default function IdeasScreen(): React.ReactElement {
     }
   }
 
-  const sorted = sortIdeasByRecency(state.ideas).filter((idea) => filter === 'all' || idea.status === filter);
+  const sorted = sortIdeasByRecency(state.ideas).filter(
+    (idea) =>
+      (filter === 'all' || idea.status === filter) &&
+      (!tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase()))
+  );
 
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={styles.content}>
@@ -75,6 +80,14 @@ export default function IdeasScreen(): React.ReactElement {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <TextInput
+        style={[styles.tagInput, { borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2 }]}
+        placeholder="Search by tag…"
+        placeholderTextColor={theme.inkFaint}
+        value={tagQuery}
+        onChangeText={setTagQuery}
+      />
 
       <Card>
         <TextInput
@@ -99,7 +112,7 @@ export default function IdeasScreen(): React.ReactElement {
 
       {sorted.length === 0 && (
         <Text style={{ color: theme.inkFaint, paddingHorizontal: 4 }}>
-          {state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas with this status.'}
+          {state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your filters.'}
         </Text>
       )}
 

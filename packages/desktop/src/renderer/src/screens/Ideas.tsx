@@ -19,6 +19,7 @@ export default function IdeasScreen(): React.ReactElement {
   const [riffing, setRiffing] = useState<string | null>(null);
   const [riffError, setRiffError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [tagQuery, setTagQuery] = useState('');
 
   React.useEffect(() => {
     void anthropic.has().then(setHasKey);
@@ -47,7 +48,9 @@ export default function IdeasScreen(): React.ReactElement {
     }
   }
 
-  const sorted = sortIdeasByRecency(state.ideas);
+  const sorted = sortIdeasByRecency(state.ideas).filter(
+    (idea) => !tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase())
+  );
 
   function renderIdea(idea: Idea) {
     return (
@@ -134,7 +137,19 @@ export default function IdeasScreen(): React.ReactElement {
         </form>
       </div>
 
-      {sorted.length === 0 && <p className="empty">No ideas yet. Drop one above.</p>}
+      {state.ideas.length > 0 && (
+        <input
+          type="text"
+          placeholder="Search by tag…"
+          value={tagQuery}
+          onChange={(e) => setTagQuery(e.target.value)}
+          style={{ marginBottom: '1rem' }}
+        />
+      )}
+
+      {sorted.length === 0 && (
+        <p className="empty">{state.ideas.length === 0 ? 'No ideas yet. Drop one above.' : 'No ideas match your search.'}</p>
+      )}
 
       {sorted.length > 0 && (
         <div className="idea-board">
