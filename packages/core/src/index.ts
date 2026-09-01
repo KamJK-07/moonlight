@@ -7,3 +7,5 @@ export * from './storage';
 export * from './store';
 export * from './github';
 export * from './anthropic';
+export * from './sync';
+export * from './base64';

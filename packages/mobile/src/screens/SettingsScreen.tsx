@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Share, Platform, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Share, Platform, Switch, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { serializeState, deserializeState, InvalidStateError } from '@moonlight/core';
-import type { ThemeMode, AccentTheme } from '@moonlight/core';
+import { serializeState, deserializeState, InvalidStateError, planSync } from '@moonlight/core';
+import type { ThemeMode, AccentTheme, WorklightState } from '@moonlight/core';
 import { useWorklight, useTheme } from '../store/WorklightContext';
 import { anthropicSecretStore } from '../store/secureStore';
+import { useGithub } from '../store/useGithub';
 import Card from '../components/Card';
 import Pill from '../components/Pill';
+
+const SYNC_PATH = 'moonlight-data.json';
 
 const MODES: Array<{ id: ThemeMode; label: string }> = [
   { id: 'system', label: 'Match system' },
@@ -22,6 +25,7 @@ const ACCENTS: Array<{ id: AccentTheme; label: string }> = [
 export default function SettingsScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const theme = useTheme();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [importText, setImportText] = useState('');
@@ -29,6 +33,9 @@ export default function SettingsScreen(): React.ReactElement {
   const [showImport, setShowImport] = useState(false);
   const [minutesInput, setMinutesInput] = useState(String(state.settings.reminderMinutesBefore));
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [syncRepoInput, setSyncRepoInput] = useState(state.settings.syncRepo ?? '');
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     void anthropicSecretStore.has().then(setHasKey);
@@ -37,6 +44,10 @@ export default function SettingsScreen(): React.ReactElement {
   useEffect(() => {
     setMinutesInput(String(state.settings.reminderMinutesBefore));
   }, [state.settings.reminderMinutesBefore]);
+
+  useEffect(() => {
+    setSyncRepoInput(state.settings.syncRepo ?? '');
+  }, [state.settings.syncRepo]);
 
   async function toggleReminders(next: boolean) {
     if (!next) {
@@ -91,6 +102,92 @@ export default function SettingsScreen(): React.ReactElement {
       setShowImport(false);
     } catch (err) {
       setImportStatus(err instanceof InvalidStateError ? `Import failed: ${err.message}` : 'Import failed.');
+    }
+  }
+
+  function commitSyncRepo() {
+    const trimmed = syncRepoInput.trim();
+    store.setSyncRepo(trimmed || null);
+    setSyncRepoInput(trimmed);
+  }
+
+  async function syncNow() {
+    const repo = state.settings.syncRepo;
+    if (!githubClient || !repo) return;
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const remoteFile = await githubClient.getFileContent(repo, SYNC_PATH);
+      let remoteState: WorklightState | null = null;
+      if (remoteFile) {
+        try {
+          remoteState = deserializeState(remoteFile.content);
+        } catch (err) {
+          setSyncStatus(
+            err instanceof InvalidStateError
+              ? `Remote data isn't valid Moonlight data: ${err.message}`
+              : 'Remote data could not be read.',
+          );
+          setSyncing(false);
+          return;
+        }
+      }
+      const action = planSync(state, remoteState);
+      if (action === 'noop') {
+        setSyncStatus('Already in sync.');
+        setSyncing(false);
+        return;
+      }
+      if (action === 'push') {
+        Alert.alert(
+          'Push local data?',
+          `This will push your local data to ${repo}, overwriting what's stored there. Continue?`,
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setSyncing(false) },
+            {
+              text: 'Push',
+              style: 'destructive',
+              onPress: () => void pushNow(repo, remoteFile?.sha),
+            },
+          ],
+        );
+        return;
+      }
+      if (action === 'pull' && remoteState) {
+        Alert.alert(
+          'Pull remote data?',
+          'Remote data is newer. Pull it? This replaces everything on this device.',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setSyncing(false) },
+            {
+              text: 'Pull',
+              style: 'destructive',
+              onPress: () => {
+                store.replaceState(remoteState as WorklightState);
+                setSyncStatus('Pulled remote data.');
+                setSyncing(false);
+              },
+            },
+          ],
+        );
+        return;
+      }
+      setSyncing(false);
+    } catch (err) {
+      setSyncStatus(err instanceof Error ? `Sync failed: ${err.message}` : 'Sync failed.');
+      setSyncing(false);
+    }
+  }
+
+  async function pushNow(repo: string, remoteSha: string | undefined) {
+    if (!githubClient) return;
+    try {
+      await githubClient.putFileContent(repo, SYNC_PATH, serializeState(state), remoteSha, 'Sync from Moonlight');
+      setSyncStatus('Pushed local data.');
+    } catch (err) {
+      setSyncStatus(err instanceof Error ? `Sync failed: ${err.message}` : 'Sync failed.');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -210,6 +307,35 @@ export default function SettingsScreen(): React.ReactElement {
           </View>
         )}
         {importStatus && <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 8 }}>{importStatus}</Text>}
+      </Card>
+
+      <Card>
+        <Text style={[styles.title, { color: theme.ink }]}>Cross-device sync</Text>
+        <Text style={{ color: theme.inkSoft, fontSize: 13, marginBottom: 10 }}>
+          Store a copy of your data in a GitHub repo you control, then sync it to your other devices.
+          Use a dedicated (ideally private) repo just for this data file — not a repo you host source
+          code in.
+        </Text>
+        <TextInput
+          style={[styles.input, { borderColor: theme.border, color: theme.ink, backgroundColor: theme.surface2, marginBottom: 10 }]}
+          placeholder="owner/repo"
+          placeholderTextColor={theme.inkFaint}
+          value={syncRepoInput}
+          onChangeText={setSyncRepoInput}
+          onBlur={commitSyncRepo}
+          autoCapitalize="none"
+        />
+        <TouchableOpacity
+          style={[styles.smallButton, { backgroundColor: theme.accent, alignSelf: 'flex-start', opacity: githubStatus !== 'connected' || !state.settings.syncRepo || syncing ? 0.5 : 1 }]}
+          onPress={() => void syncNow()}
+          disabled={githubStatus !== 'connected' || !state.settings.syncRepo || syncing}
+        >
+          <Text style={{ color: theme.accentInk, fontWeight: '600' }}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
+        </TouchableOpacity>
+        {githubStatus !== 'connected' && (
+          <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 8 }}>Connect GitHub to enable sync.</Text>
+        )}
+        {syncStatus && <Text style={{ color: theme.inkFaint, fontSize: 12, marginTop: 8 }}>{syncStatus}</Text>}
       </Card>
 
       <Card>

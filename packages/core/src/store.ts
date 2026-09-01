@@ -367,6 +367,10 @@ export class WorklightStore {
     this.set({ ...this.state, settings: { ...this.state.settings, githubUsername } });
   }
 
+  setSyncRepo(syncRepo: string | null): void {
+    this.set({ ...this.state, settings: { ...this.state.settings, syncRepo } });
+  }
+
   setGithubActivitySeenAt(timestamp: string): void {
     this.set({ ...this.state, settings: { ...this.state.settings, githubActivitySeenAt: timestamp } });
   }

@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { serializeState, deserializeState, InvalidStateError } from '@moonlight/core';
-import type { ThemeMode, AccentTheme } from '@moonlight/core';
+import { serializeState, deserializeState, InvalidStateError, planSync } from '@moonlight/core';
+import type { ThemeMode, AccentTheme, WorklightState } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
+
+const SYNC_PATH = 'moonlight-data.json';
 
 const MODES: Array<{ id: ThemeMode; label: string }> = [
   { id: 'system', label: 'Match system' },
@@ -18,11 +21,15 @@ const ACCENTS: Array<{ id: AccentTheme; label: string }> = [
 export default function SettingsScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const anthropic = useAnthropicSecrets();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const [hasAnthropicKey, setHasAnthropicKey] = useState<boolean | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [keyStatus, setKeyStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [minutesInput, setMinutesInput] = useState(String(state.settings.reminderMinutesBefore));
+  const [syncRepoInput, setSyncRepoInput] = useState(state.settings.syncRepo ?? '');
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     void anthropic.has().then(setHasAnthropicKey);
@@ -31,6 +38,10 @@ export default function SettingsScreen(): React.ReactElement {
   useEffect(() => {
     setMinutesInput(String(state.settings.reminderMinutesBefore));
   }, [state.settings.reminderMinutesBefore]);
+
+  useEffect(() => {
+    setSyncRepoInput(state.settings.syncRepo ?? '');
+  }, [state.settings.syncRepo]);
 
   function commitMinutes() {
     const parsed = Number(minutesInput);
@@ -70,6 +81,59 @@ export default function SettingsScreen(): React.ReactElement {
       setImportStatus('Backup imported.');
     } catch (err) {
       setImportStatus(err instanceof InvalidStateError ? `Import failed: ${err.message}` : 'Import failed.');
+    }
+  }
+
+  function commitSyncRepo() {
+    const trimmed = syncRepoInput.trim();
+    store.setSyncRepo(trimmed || null);
+    setSyncRepoInput(trimmed);
+  }
+
+  async function syncNow() {
+    const repo = state.settings.syncRepo;
+    if (!githubClient || !repo) return;
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const remoteFile = await githubClient.getFileContent(repo, SYNC_PATH);
+      let remoteState: WorklightState | null = null;
+      if (remoteFile) {
+        try {
+          remoteState = deserializeState(remoteFile.content);
+        } catch (err) {
+          setSyncStatus(
+            err instanceof InvalidStateError
+              ? `Remote data isn't valid Moonlight data: ${err.message}`
+              : 'Remote data could not be read.',
+          );
+          return;
+        }
+      }
+      const action = planSync(state, remoteState);
+      if (action === 'noop') {
+        setSyncStatus('Already in sync.');
+        return;
+      }
+      if (action === 'push') {
+        const confirmed = window.confirm(
+          `This will push your local data to ${repo}, overwriting what's stored there. Continue?`,
+        );
+        if (!confirmed) return;
+        await githubClient.putFileContent(repo, SYNC_PATH, serializeState(state), remoteFile?.sha, 'Sync from Moonlight');
+        setSyncStatus('Pushed local data.');
+        return;
+      }
+      if (action === 'pull' && remoteState) {
+        const confirmed = window.confirm('Remote data is newer. Pull it? This replaces everything on this device.');
+        if (!confirmed) return;
+        store.replaceState(remoteState);
+        setSyncStatus('Pulled remote data.');
+      }
+    } catch (err) {
+      setSyncStatus(err instanceof Error ? `Sync failed: ${err.message}` : 'Sync failed.');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -183,6 +247,38 @@ export default function SettingsScreen(): React.ReactElement {
           <button onClick={() => void importData()}>Import backup…</button>
         </div>
         {importStatus && <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)' }}>{importStatus}</p>}
+      </div>
+
+      <div className="card">
+        <h3>Cross-device sync</h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: 0 }}>
+          Store a copy of your data in a GitHub repo you control, then sync it to your other devices.
+          Use a dedicated (ideally private) repo just for this data file — not a repo you host source
+          code in.
+        </p>
+        <div className="form-row" style={{ marginBottom: '0.6rem' }}>
+          <input
+            type="text"
+            placeholder="owner/repo"
+            value={syncRepoInput}
+            onChange={(e) => setSyncRepoInput(e.target.value)}
+            onBlur={commitSyncRepo}
+            style={{ flex: '2 1 260px' }}
+          />
+        </div>
+        <div className="form-row" style={{ marginBottom: 0 }}>
+          <button
+            className="btn-accent"
+            onClick={() => void syncNow()}
+            disabled={githubStatus !== 'connected' || !state.settings.syncRepo || syncing}
+          >
+            {syncing ? 'Syncing…' : 'Sync now'}
+          </button>
+        </div>
+        {githubStatus !== 'connected' && (
+          <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)' }}>Connect GitHub to enable sync.</p>
+        )}
+        {syncStatus && <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)' }}>{syncStatus}</p>}
       </div>
 
       <div className="card">

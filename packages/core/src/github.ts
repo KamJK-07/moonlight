@@ -6,6 +6,8 @@
  * provide one).
  */
 
+import { utf8ToBase64, base64ToUtf8 } from './base64';
+
 const GITHUB_API = 'https://api.github.com';
 const API_VERSION = '2022-11-28';
 
@@ -175,6 +177,41 @@ export class GithubClient {
       method: 'PATCH',
       body: JSON.stringify({ state }),
     });
+  }
+
+  async getFileContent(fullName: string, path: string): Promise<{ content: string; sha: string } | null> {
+    try {
+      const file = await this.request<{ content: string; sha: string }>(
+        `/repos/${fullName}/contents/${path}`,
+      );
+      return { content: base64ToUtf8(file.content.replace(/\s/g, '')), sha: file.sha };
+    } catch (err) {
+      if (err instanceof GithubApiError && err.status === 404) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  async putFileContent(
+    fullName: string,
+    path: string,
+    content: string,
+    sha: string | undefined,
+    message: string,
+  ): Promise<{ sha: string }> {
+    const body: { message: string; content: string; sha?: string } = {
+      message,
+      content: utf8ToBase64(content),
+    };
+    if (sha !== undefined) {
+      body.sha = sha;
+    }
+    const res = await this.request<{ content: { sha: string } }>(`/repos/${fullName}/contents/${path}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+    return { sha: res.content.sha };
   }
 
   /** Merges commit + PR activity across repos into one reverse-chronological feed. */

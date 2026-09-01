@@ -12,6 +12,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
     lastCommitLogSyncAt: null,
     remindersEnabled: true,
     reminderMinutesBefore: 30,
+    syncRepo: null,
     ...overrides,
   };
 }

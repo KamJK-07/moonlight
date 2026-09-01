@@ -120,6 +120,7 @@ export function createInitialState(): WorklightState {
       lastCommitLogSyncAt: null,
       remindersEnabled: false,
       reminderMinutesBefore: 30,
+      syncRepo: null,
     },
   };
 }

@@ -1,4 +1,5 @@
 import { GithubClient, GithubApiError } from '../src/github';
+import { utf8ToBase64 } from '../src/base64';
 
 function jsonResponse(body: unknown, ok = true, status = 200): Response {
   return {
@@ -112,5 +113,71 @@ describe('GithubClient', () => {
     const feed = await client.fetchActivityFeed(['kameron/broken-repo', 'kameron/good-repo']);
     expect(feed).toHaveLength(1);
     expect(feed[0]?.title).toBe('ok');
+  });
+
+  describe('getFileContent', () => {
+    it('decodes base64 content (with embedded newlines) and returns the sha', async () => {
+      const encoded = utf8ToBase64('{"hello":"world 🚀"}');
+      const wrapped = `${encoded.slice(0, 10)}\n${encoded.slice(10)}\n`;
+      const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ content: wrapped, sha: 'abc123' }));
+      const client = new GithubClient('t', fetchMock);
+      const result = await client.getFileContent('kameron/data', 'moonlight-data.json');
+      expect(result).toEqual({ content: '{"hello":"world 🚀"}', sha: 'abc123' });
+    });
+
+    it('returns null on a 404 instead of throwing', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ message: 'Not Found' }, false, 404));
+      const client = new GithubClient('t', fetchMock);
+      const result = await client.getFileContent('kameron/data', 'moonlight-data.json');
+      expect(result).toBeNull();
+    });
+
+    it('re-throws non-404 errors', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ message: 'Bad credentials' }, false, 401));
+      const client = new GithubClient('t', fetchMock);
+      await expect(client.getFileContent('kameron/data', 'moonlight-data.json')).rejects.toMatchObject({
+        status: 401,
+      });
+    });
+  });
+
+  describe('putFileContent', () => {
+    it('base64-encodes the content and omits sha when creating a new file', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ content: { sha: 'new-sha' } }));
+      const client = new GithubClient('t', fetchMock);
+      const result = await client.putFileContent(
+        'kameron/data',
+        'moonlight-data.json',
+        '{"a":1}',
+        undefined,
+        'Sync from Moonlight',
+      );
+      expect(result).toEqual({ sha: 'new-sha' });
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('https://api.github.com/repos/kameron/data/contents/moonlight-data.json');
+      const body = JSON.parse(init.body as string);
+      expect(body).toEqual({ message: 'Sync from Moonlight', content: utf8ToBase64('{"a":1}') });
+      expect(body.sha).toBeUndefined();
+    });
+
+    it('includes sha when updating an existing file', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ content: { sha: 'updated-sha' } }));
+      const client = new GithubClient('t', fetchMock);
+      const result = await client.putFileContent(
+        'kameron/data',
+        'moonlight-data.json',
+        '{"a":2}',
+        'old-sha',
+        'Sync from Moonlight',
+      );
+      expect(result).toEqual({ sha: 'updated-sha' });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string);
+      expect(body).toEqual({
+        message: 'Sync from Moonlight',
+        content: utf8ToBase64('{"a":2}'),
+        sha: 'old-sha',
+      });
+    });
   });
 });

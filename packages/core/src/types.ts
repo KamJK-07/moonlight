@@ -127,6 +127,14 @@ export interface Settings {
   remindersEnabled: boolean;
   /** How many minutes before a calendar event's time to fire its reminder. */
   reminderMinutesBefore: number;
+  /**
+   * "owner/repo" of the repo dedicated to storing this app's synced data
+   * file — deliberately separate from `linkedRepos`, which are for source
+   * repos feeding the activity feed / issue sync. Typically a private repo
+   * the user doesn't otherwise host source code in. Null means sync isn't
+   * set up yet.
+   */
+  syncRepo: string | null;
 }
 
 export interface WorklightState {
