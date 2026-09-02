@@ -67,11 +67,13 @@ const basePalette: Record<'light' | 'dark', BaseTokens> = {
 const accentPalette: Record<'light' | 'dark', Record<AccentTheme, AccentTokens>> = {
   light: {
     amber: { accent: '#E07B1E', accentInk: '#241300', accentSoft: '#FBE7D2' },
+    green: { accent: '#2F9E44', accentInk: '#072B0D', accentSoft: '#DBF4E0' },
     violet: { accent: '#7C5CE0', accentInk: '#150C2E', accentSoft: '#E6DFFB' },
     teal: { accent: '#1E8F82', accentInk: '#04201C', accentSoft: '#D8F0EC' },
   },
   dark: {
     amber: { accent: '#F0A24E', accentInk: '#1E1000', accentSoft: '#3A2A12' },
+    green: { accent: '#5FD576', accentInk: '#072B0D', accentSoft: '#143B1C' },
     violet: { accent: '#A796FF', accentInk: '#150C2E', accentSoft: '#2B2350' },
     teal: { accent: '#4FC9BA', accentInk: '#04201C', accentSoft: '#123430' },
   },

@@ -12,9 +12,10 @@ import LogScreen from './screens/Log';
 import IdeasScreen from './screens/Ideas';
 import GithubScreen from './screens/GithubScreen';
 import SettingsScreen from './screens/Settings';
+import MapView from './screens/MapView';
 import QuickAdd from './components/QuickAdd';
 
-export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas' | 'github';
+export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas';
 
 const VIEWS: Array<{ id: ViewId; label: string }> = [
   { id: 'today', label: 'Today' },
@@ -23,7 +24,6 @@ const VIEWS: Array<{ id: ViewId; label: string }> = [
   { id: 'projects', label: 'Projects' },
   { id: 'log', label: 'Progress log' },
   { id: 'ideas', label: 'Creative hub' },
-  { id: 'github', label: 'GitHub' },
 ];
 
 const TEXT_SCALE_PX: Record<TextScale, string> = {
@@ -46,6 +46,8 @@ function Shell(): React.ReactElement {
   const [view, setView] = useState<ViewId>('today');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const { status: githubStatus, client: githubClient, login: githubLogin } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   useReminderPoller();
@@ -88,6 +90,9 @@ function Shell(): React.ReactElement {
         <div className="brand">
           <span className="brand-mark" />
           <h1>Moonlight</h1>
+          <button className="map-button" onClick={() => setShowMap(true)} aria-label="Open project map" title="Project map">
+            🗺
+          </button>
         </div>
         <nav className="nav">
           {VIEWS.map((v) => (
@@ -96,20 +101,7 @@ function Shell(): React.ReactElement {
               className={`nav-item${view === v.id ? ' active' : ''}`}
               onClick={() => setView(v.id)}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {v.label}
-                {v.id === 'github' && hasNewGithubActivity ? (
-                  <span
-                    style={{
-                      width: '0.4rem',
-                      height: '0.4rem',
-                      borderRadius: '50%',
-                      background: 'var(--accent)',
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : null}
-              </span>
+              <span>{v.label}</span>
               {counts[v.id] ? <span className="nav-count">{counts[v.id]}</span> : null}
             </button>
           ))}
@@ -117,11 +109,12 @@ function Shell(): React.ReactElement {
         <div className="sidebar-foot">
           <button
             className="account-button"
-            onClick={() => setView('github')}
+            onClick={() => setShowAccount(true)}
             title={githubStatus === 'connected' ? `Connected as ${githubLogin}` : 'Connect GitHub'}
           >
             <span className={`gh-dot${githubStatus === 'connected' ? ' connected' : ''}`} />
             <span className="account-label">{githubStatus === 'connected' ? githubLogin : 'Account'}</span>
+            {hasNewGithubActivity && <span className="account-unread" />}
           </button>
           <button className="settings-gear" onClick={() => setShowSettings(true)} aria-label="Settings" title="Settings">
             ⚙
@@ -141,7 +134,6 @@ function Shell(): React.ReactElement {
           ))}
         {view === 'log' && <LogScreen />}
         {view === 'ideas' && <IdeasScreen />}
-        {view === 'github' && <GithubScreen />}
       </main>
       <QuickAdd />
       {showSettings && (
@@ -154,6 +146,31 @@ function Shell(): React.ReactElement {
             <SettingsScreen />
           </div>
         </div>
+      )}
+      {showAccount && (
+        <div className="settings-popout-backdrop" onClick={() => setShowAccount(false)}>
+          <div className="card settings-popout" onClick={(e) => e.stopPropagation()}>
+            <button className="btn-plain settings-popout-close" onClick={() => setShowAccount(false)} aria-label="Close account">
+              ×
+            </button>
+            <h2 style={{ marginBottom: '1rem' }}>Account</h2>
+            <GithubScreen />
+          </div>
+        </div>
+      )}
+      {showMap && (
+        <MapView
+          onClose={() => setShowMap(false)}
+          onOpenProject={(id) => {
+            setView('projects');
+            setSelectedProjectId(id);
+            setShowMap(false);
+          }}
+          onOpenTasks={() => {
+            setView('tasks');
+            setShowMap(false);
+          }}
+        />
       )}
     </div>
   );

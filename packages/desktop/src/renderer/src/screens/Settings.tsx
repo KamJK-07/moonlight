@@ -14,6 +14,7 @@ const MODES: Array<{ id: ThemeMode; label: string }> = [
 
 const ACCENTS: Array<{ id: AccentTheme; label: string }> = [
   { id: 'amber', label: 'Amber' },
+  { id: 'green', label: 'Green' },
   { id: 'violet', label: 'Violet' },
   { id: 'teal', label: 'Teal' },
 ];

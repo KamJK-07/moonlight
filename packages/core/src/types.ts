@@ -106,7 +106,7 @@ export interface Idea {
   updatedAt: ISODateTime;
 }
 
-export type AccentTheme = 'amber' | 'violet' | 'teal';
+export type AccentTheme = 'amber' | 'violet' | 'teal' | 'green';
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TextScale = 'small' | 'normal' | 'large' | 'xlarge';
 
