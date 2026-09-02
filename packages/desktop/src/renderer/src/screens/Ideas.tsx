@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { sortIdeasByRecency } from '@moonlight/core';
 import type { Idea, IdeaStatus } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
+import { useGithub } from '../store/useGithub';
 
 const STATUSES: IdeaStatus[] = ['raw', 'exploring', 'parked', 'shipped'];
 const STATUS_LABEL: Record<IdeaStatus, string> = {
@@ -117,19 +118,58 @@ function IdeaImages({
   );
 }
 
+interface IssueDraft {
+  ideaId: string;
+  repo: string;
+  title: string;
+  body: string;
+}
+
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const anthropic = useAnthropicSecrets();
+  const { status: githubStatus, client: githubClient } = useGithub();
   const [text, setText] = useState('');
   const [tag, setTag] = useState('');
   const [riffing, setRiffing] = useState<string | null>(null);
   const [riffError, setRiffError] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [tagQuery, setTagQuery] = useState('');
+  const [draftingIssueFor, setDraftingIssueFor] = useState<string | null>(null);
+  const [issueDraft, setIssueDraft] = useState<IssueDraft | null>(null);
+  const [issueDraftError, setIssueDraftError] = useState<string | null>(null);
+  const [creatingIssue, setCreatingIssue] = useState(false);
 
   React.useEffect(() => {
     void anthropic.has().then(setHasKey);
   }, [anthropic]);
+
+  async function draftIssue(idea: Idea): Promise<void> {
+    setDraftingIssueFor(idea.id);
+    setIssueDraftError(null);
+    try {
+      const body = await window.moonlight.draftIssueBody(idea.text, idea.tag, idea.riff);
+      setIssueDraft({ ideaId: idea.id, repo: state.settings.linkedRepos[0] ?? '', title: idea.text, body });
+    } catch (err) {
+      setIssueDraftError(err instanceof Error ? err.message : 'Could not reach Claude right now.');
+    } finally {
+      setDraftingIssueFor(null);
+    }
+  }
+
+  async function createDraftedIssue(): Promise<void> {
+    if (!issueDraft || !githubClient || !issueDraft.repo) return;
+    setCreatingIssue(true);
+    try {
+      await githubClient.createIssue(issueDraft.repo, issueDraft.title, issueDraft.body);
+      store.setIdeaStatus(issueDraft.ideaId, 'shipped');
+      setIssueDraft(null);
+    } catch (err) {
+      setIssueDraftError(err instanceof Error ? err.message : 'Could not create the issue.');
+    } finally {
+      setCreatingIssue(false);
+    }
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -206,6 +246,11 @@ export default function IdeasScreen(): React.ReactElement {
           <button className="btn-plain" onClick={() => convertToProject(idea)}>
             → Project
           </button>
+          {hasKey && githubStatus === 'connected' && state.settings.linkedRepos.length > 0 && (
+            <button className="btn-plain" onClick={() => void draftIssue(idea)} disabled={draftingIssueFor === idea.id}>
+              {draftingIssueFor === idea.id ? 'Drafting…' : '→ Issue (AI-drafted)'}
+            </button>
+          )}
         </div>
         <select
           value={idea.status}
@@ -231,6 +276,39 @@ export default function IdeasScreen(): React.ReactElement {
           <div className="idea-riff">
             <span className="l">Claude riffed</span>
             {idea.riff}
+          </div>
+        )}
+        {issueDraft && issueDraft.ideaId === idea.id && (
+          <div className="idea-issue-draft">
+            <span className="l">Draft GitHub issue</span>
+            <select value={issueDraft.repo} onChange={(e) => setIssueDraft({ ...issueDraft, repo: e.target.value })}>
+              {state.settings.linkedRepos.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={issueDraft.title}
+              onChange={(e) => setIssueDraft({ ...issueDraft, title: e.target.value })}
+              style={{ width: '100%', marginTop: '0.4rem' }}
+            />
+            <textarea
+              rows={6}
+              value={issueDraft.body}
+              onChange={(e) => setIssueDraft({ ...issueDraft, body: e.target.value })}
+              style={{ width: '100%', marginTop: '0.4rem' }}
+            />
+            {issueDraftError && <p style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>{issueDraftError}</p>}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
+              <button className="btn-accent" onClick={() => void createDraftedIssue()} disabled={creatingIssue}>
+                {creatingIssue ? 'Creating…' : 'Create issue'}
+              </button>
+              <button className="btn-plain" onClick={() => setIssueDraft(null)}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
         {riffing === idea.id ? null : hasKey ? (

@@ -384,6 +384,9 @@ button:disabled:active { transform: none; }
 
 .idea-riff { background: var(--surface-2); border-left: 2px solid var(--accent); padding: 0.55rem 0.7rem; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: var(--ink-soft); }
 .idea-riff .l { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 0.2rem; }
+.idea-issue-draft { background: var(--surface-2); border-left: 2px solid var(--accent); padding: 0.6rem 0.7rem; border-radius: 0 6px 6px 0; }
+.idea-issue-draft .l { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 0.3rem; }
+.idea-issue-draft textarea { font-size: 0.82rem; font-family: var(--font-mono); }
 
 .idea-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.8rem; align-items: start; width: 100%; }
 .idea-column { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem; display: flex; flex-direction: column; gap: 0.6rem; min-height: 80px; min-width: 0; }

@@ -86,3 +86,25 @@ export function buildRiffPrompt(ideaText: string, tag: string | null): string {
     `that pushes it forward. No preamble, no restating the idea back.`
   );
 }
+
+/** Turns a week of progress-log entries into a short written recap prompt. */
+export function buildWeeklyRecapPrompt(entries: Array<{ date: string; text: string }>): string {
+  const lines = entries.map((e) => `- ${e.date}: ${e.text}`).join('\n');
+  return (
+    `Here is a personal progress log for the past week, oldest first:\n${lines}\n\n` +
+    `Write a short first-person recap (3-5 sentences) summarizing what got done this week, grouped by ` +
+    `theme if there's a clear pattern. No preamble, no bullet list, no restating the date range.`
+  );
+}
+
+/** Drafts a full GitHub issue body (Markdown) from a captured idea and its optional riff. */
+export function buildIssueBodyPrompt(ideaText: string, tag: string | null, riff: string | null): string {
+  return (
+    `Draft a GitHub issue body for this idea from a personal idea board.\n` +
+    `Idea: "${ideaText}"${tag ? ` (tag: ${tag})` : ''}\n` +
+    (riff ? `A prior AI riff on it: "${riff}"\n` : '') +
+    `\nWrite a clear, concise issue body in Markdown: a one-line summary, then a short "Why" section and, ` +
+    `if relevant, a bulleted "Approach" or "Acceptance criteria" section. Output only the issue body itself ` +
+    `— no preamble like "Here's a draft".`
+  );
+}

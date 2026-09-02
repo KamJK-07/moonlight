@@ -3,7 +3,7 @@ import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { is } from '@electron-toolkit/utils';
 import type { WorklightState } from '@moonlight/core';
-import { AnthropicClient, AnthropicApiError, buildRiffPrompt } from '@moonlight/core';
+import { AnthropicClient, AnthropicApiError, buildRiffPrompt, buildWeeklyRecapPrompt, buildIssueBodyPrompt } from '@moonlight/core';
 import { FileStorageAdapter, SafeStorageTokenStore } from './storage';
 
 const storageAdapter = new FileStorageAdapter();
@@ -124,7 +124,7 @@ ipcMain.handle('state:save', async (_event, state: WorklightState) => storageAda
 // The GitHub token is handed back to the renderer on request (it needs
 // it to call the GitHub API directly). The Anthropic key is deliberately
 // NOT retrievable this way — enforced here, not just by renderer
-// convention — since only the ai:riff handler below is allowed to use it.
+// convention — since only the ai:* handlers below are allowed to use it.
 ipcMain.handle('secret:get', async (_event, name: SecretName) => {
   if (name === 'anthropic') {
     throw new Error('The Anthropic key cannot be read back from the renderer.');
@@ -135,18 +135,18 @@ ipcMain.handle('secret:set', async (_event, name: SecretName, value: string) => 
 ipcMain.handle('secret:clear', async (_event, name: SecretName) => secretStores[name].clear());
 ipcMain.handle('secret:has', async (_event, name: SecretName) => (await secretStores[name].get()) !== null);
 
-// ---------- IPC: AI riff (Creative Hub) ----------
-// The renderer sends only the idea text/tag; this process holds the
-// Anthropic key and makes the call itself, so the key is never
-// serialized into the renderer's JS context at all.
-ipcMain.handle('ai:riff', async (_event, ideaText: string, tag: string | null) => {
+// ---------- IPC: Claude-backed features ----------
+// The renderer only ever sends plain text (idea text, log entries); this
+// process holds the Anthropic key and makes the call itself, so the key
+// is never serialized into the renderer's JS context at all.
+async function callAnthropic(prompt: string, maxTokens: number, noKeyMessage: string): Promise<string> {
   const apiKey = await secretStores.anthropic.get();
   if (!apiKey) {
-    throw new Error('No Anthropic API key connected. Add one in Settings to enable riffing.');
+    throw new Error(noKeyMessage);
   }
   try {
     const client = new AnthropicClient(apiKey);
-    const text = await client.complete(buildRiffPrompt(ideaText, tag));
+    const text = await client.complete(prompt, { maxTokens });
     return text.trim();
   } catch (err) {
     if (err instanceof AnthropicApiError && err.status === 401) {
@@ -154,7 +154,27 @@ ipcMain.handle('ai:riff', async (_event, ideaText: string, tag: string | null) =
     }
     throw err;
   }
-});
+}
+
+ipcMain.handle('ai:riff', async (_event, ideaText: string, tag: string | null) =>
+  callAnthropic(buildRiffPrompt(ideaText, tag), 300, 'No Anthropic API key connected. Add one in Settings to enable riffing.'),
+);
+
+ipcMain.handle('ai:weeklyRecap', async (_event, entries: Array<{ date: string; text: string }>) =>
+  callAnthropic(
+    buildWeeklyRecapPrompt(entries),
+    300,
+    'No Anthropic API key connected. Add one in Settings to enable weekly recaps.',
+  ),
+);
+
+ipcMain.handle('ai:draftIssueBody', async (_event, ideaText: string, tag: string | null, riff: string | null) =>
+  callAnthropic(
+    buildIssueBodyPrompt(ideaText, tag, riff),
+    500,
+    'No Anthropic API key connected. Add one in Settings to enable this.',
+  ),
+);
 
 // ---------- IPC: JSON backup export / import ----------
 ipcMain.handle('data:export', async (event, json: string) => {

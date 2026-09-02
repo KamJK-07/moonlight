@@ -23,6 +23,10 @@ const moonlightBridge = {
 
   riffIdea: (ideaText: string, tag: string | null): Promise<string> =>
     ipcRenderer.invoke('ai:riff', ideaText, tag),
+  generateWeeklyRecap: (entries: Array<{ date: string; text: string }>): Promise<string> =>
+    ipcRenderer.invoke('ai:weeklyRecap', entries),
+  draftIssueBody: (ideaText: string, tag: string | null, riff: string | null): Promise<string> =>
+    ipcRenderer.invoke('ai:draftIssueBody', ideaText, tag, riff),
 
   exportData: (json: string): Promise<{ saved: boolean; filePath?: string }> =>
     ipcRenderer.invoke('data:export', json),
