@@ -37,6 +37,15 @@ export interface Task {
   priority: TaskPriority;
   githubIssue: GithubIssueRef | null;
   subtasks: Subtask[];
+  /**
+   * 'none' means one-shot. Anything else: completing this task creates a
+   * fresh copy due on the next occurrence instead of just marking it done
+   * — tasks are single objects (unlike CalendarEvent), so recurrence is
+   * "recreate on completion" rather than expanded occurrences.
+   */
+  recurrence: EventRecurrence;
+  /** IDs of other tasks that must be done before this one can be. */
+  blockedBy: ID[];
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }

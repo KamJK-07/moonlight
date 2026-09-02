@@ -37,6 +37,24 @@ function occurrenceDates(startKey: DateKey, recurrence: CalendarEvent['recurrenc
   return out;
 }
 
+/**
+ * Advances a single DateKey forward one step of the given recurrence —
+ * used to recreate a recurring task's next due date on completion (tasks
+ * are single objects, not expanded into occurrences like events are).
+ * Monthly clamps to the target month's last day instead of skipping it,
+ * e.g. Jan 31 -> Feb 28, since a "next due date" needs exactly one answer.
+ */
+export function nextRecurrenceDate(fromKey: DateKey, recurrence: 'daily' | 'weekly' | 'monthly'): DateKey {
+  if (recurrence === 'daily') return addDays(fromKey, 1);
+  if (recurrence === 'weekly') return addDays(fromKey, 7);
+  const start = parseDateKey(fromKey);
+  const targetMonthIndex = start.getMonth() + 1;
+  const targetYear = start.getFullYear() + Math.floor(targetMonthIndex / 12);
+  const targetMonth1to12 = (((targetMonthIndex % 12) + 12) % 12) + 1;
+  const day = Math.min(start.getDate(), daysInMonth(targetYear, targetMonth1to12));
+  return dateKeyFrom(targetYear, targetMonth1to12, day);
+}
+
 /** Expands stored events (including recurring ones) into every occurrence
  * falling within [rangeStart, rangeEnd] (inclusive), keyed by occurrence date. */
 export function occurrencesInRange(

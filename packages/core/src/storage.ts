@@ -69,6 +69,8 @@ export function createInitialState(): WorklightState {
         priority: 'medium',
         githubIssue: null,
         subtasks: [],
+        recurrence: 'none',
+        blockedBy: [],
         createdAt: now,
         updatedAt: now,
       },

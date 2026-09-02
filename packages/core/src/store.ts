@@ -27,6 +27,8 @@ export interface NewTaskInput {
   projectId?: string | null;
   due?: DateKey | null;
   priority?: TaskPriority;
+  recurrence?: EventRecurrence;
+  blockedBy?: string[];
 }
 
 export interface NewProjectInput {
@@ -107,6 +109,8 @@ export class WorklightStore {
       priority: input.priority ?? 'medium',
       githubIssue: null,
       subtasks: [],
+      recurrence: input.recurrence ?? 'none',
+      blockedBy: input.blockedBy ?? [],
       createdAt: now,
       updatedAt: now,
     };

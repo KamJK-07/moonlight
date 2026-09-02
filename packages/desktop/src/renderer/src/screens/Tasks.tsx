@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { groupTasks } from '@moonlight/core';
-import type { TaskPriority } from '@moonlight/core';
+import type { TaskPriority, EventRecurrence } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 import { useTaskGithubSync } from '../store/useTaskGithubSync';
 import TaskRow from '../components/TaskRow';
+
+const RECURRENCE_OPTIONS: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 
 export default function TasksScreen(): React.ReactElement {
   const { state, store } = useWorklight();
@@ -14,6 +16,7 @@ export default function TasksScreen(): React.ReactElement {
   const [projectId, setProjectId] = useState('');
   const [due, setDue] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [recurrence, setRecurrence] = useState<EventRecurrence>('none');
   const [search, setSearch] = useState('');
   const [filterProjectId, setFilterProjectId] = useState('');
 
@@ -24,10 +27,23 @@ export default function TasksScreen(): React.ReactElement {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
-    store.addTask({ text, projectId: projectId || null, due: due || null, priority });
+    store.addTask({ text, projectId: projectId || null, due: due || null, priority, recurrence });
     setText('');
     setDue('');
     setPriority('medium');
+    setRecurrence('none');
+  }
+
+  function addBlocker(taskId: string, blockerId: string) {
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    store.updateTask(taskId, { blockedBy: [...(task.blockedBy ?? []), blockerId] });
+  }
+
+  function removeBlocker(taskId: string, blockerId: string) {
+    const task = state.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    store.updateTask(taskId, { blockedBy: (task.blockedBy ?? []).filter((id) => id !== blockerId) });
   }
 
   const filteredTasks = state.tasks.filter((t) => {
@@ -64,12 +80,16 @@ export default function TasksScreen(): React.ReactElement {
                 key={t.id}
                 task={t}
                 project={proj}
+                allTasks={state.tasks}
                 onToggle={(id, done) => toggleTaskWithSync(t, done)}
                 onDelete={(id) => store.deleteTask(id)}
                 onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
                 onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
                 onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
                 onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
+                onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+                onAddBlocker={addBlocker}
+                onRemoveBlocker={removeBlocker}
               />
             );
           })}
@@ -106,6 +126,13 @@ export default function TasksScreen(): React.ReactElement {
               <option value="high">High</option>
             </select>
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as EventRecurrence)}>
+              {RECURRENCE_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r === 'none' ? 'Does not repeat' : r[0]!.toUpperCase() + r.slice(1)}
+                </option>
+              ))}
+            </select>
             <button className="btn-accent" type="submit">
               Add task
             </button>
@@ -153,12 +180,16 @@ export default function TasksScreen(): React.ReactElement {
                   key={t.id}
                   task={t}
                   project={proj}
+                  allTasks={state.tasks}
                   onToggle={(id, done) => toggleTaskWithSync(t, done)}
                   onDelete={(id) => store.deleteTask(id)}
                   onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
                   onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
                   onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
                   onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
+                  onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+                  onAddBlocker={addBlocker}
+                  onRemoveBlocker={removeBlocker}
                 />
               );
             })}

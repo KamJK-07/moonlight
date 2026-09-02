@@ -3,12 +3,14 @@ import { onDeck, computeStreak, activeProjectCount, todayKey, eventsForDate } fr
 import type { GithubActivityItem } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
+import { useTaskGithubSync } from '../store/useTaskGithubSync';
 import TaskRow from '../components/TaskRow';
 import type { ViewId } from '../App';
 
 export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (v: ViewId) => void }): React.ReactElement {
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
+  const { toggleTaskWithSync } = useTaskGithubSync();
   const [logText, setLogText] = useState('');
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
@@ -83,11 +85,21 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
               key={t.id}
               task={t}
               project={projectOf(t.projectId)}
-              onToggle={(id, done) => store.toggleTask(id, done)}
+              allTasks={state.tasks}
+              onToggle={(id, done) => toggleTaskWithSync(t, done)}
               onDelete={(id) => store.deleteTask(id)}
               onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
               onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
               onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
+              onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+              onAddBlocker={(taskId, blockerId) => {
+                const task = state.tasks.find((x) => x.id === taskId);
+                if (task) store.updateTask(taskId, { blockedBy: [...(task.blockedBy ?? []), blockerId] });
+              }}
+              onRemoveBlocker={(taskId, blockerId) => {
+                const task = state.tasks.find((x) => x.id === taskId);
+                if (task) store.updateTask(taskId, { blockedBy: (task.blockedBy ?? []).filter((id) => id !== blockerId) });
+              }}
             />
           ))}
         </ul>

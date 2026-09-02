@@ -323,6 +323,10 @@ button:disabled:active { transform: none; }
 .subtask-list { gap: 0.1rem; margin-bottom: 0.35rem; }
 .subtask-row { padding: 0.3rem 0.15rem; font-size: 0.85rem; }
 .subtask-add input { width: 100%; font-size: 0.85rem; padding: 0.35rem 0.6rem; }
+.task-detail-row { margin-top: 0.5rem; }
+.task-detail-row .l { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 0.25rem; }
+.task-detail-row select { font-size: 0.85rem; padding: 0.35rem 0.6rem; }
+.blocked-tag { background: var(--danger-soft); color: var(--danger); }
 
 .pill { font-family: var(--font-mono); font-size: 0.64rem; padding: 0.14rem 0.5rem; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.03em; }
 .pill.active { background: var(--success-soft); color: var(--success); }

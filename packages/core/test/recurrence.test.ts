@@ -1,4 +1,4 @@
-import { occurrencesInRange } from '../src/recurrence';
+import { occurrencesInRange, nextRecurrenceDate } from '../src/recurrence';
 import type { CalendarEvent, DateKey } from '../src/types';
 
 function makeEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
@@ -78,5 +78,27 @@ describe('occurrencesInRange', () => {
     const dates = datesOf(result);
     expect(dates.length).toBeGreaterThan(0);
     expect(dates.every((d) => d.endsWith('-31'))).toBe(true);
+  });
+});
+
+describe('nextRecurrenceDate', () => {
+  it('daily advances by one day', () => {
+    expect(nextRecurrenceDate('2026-03-10', 'daily')).toBe('2026-03-11');
+  });
+
+  it('weekly advances by seven days', () => {
+    expect(nextRecurrenceDate('2026-03-10', 'weekly')).toBe('2026-03-17');
+  });
+
+  it('monthly keeps the same day of month', () => {
+    expect(nextRecurrenceDate('2026-03-10', 'monthly')).toBe('2026-04-10');
+  });
+
+  it('monthly clamps to the shorter month instead of skipping it', () => {
+    expect(nextRecurrenceDate('2026-01-31', 'monthly')).toBe('2026-02-28');
+  });
+
+  it('monthly rolls over into the next year', () => {
+    expect(nextRecurrenceDate('2026-12-15', 'monthly')).toBe('2027-01-15');
   });
 });
