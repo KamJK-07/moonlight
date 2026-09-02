@@ -78,11 +78,21 @@ function Shell(): React.ReactElement {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       setShowShortcuts(true);
     }
+    function onEscape(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      setShowSettings(false);
+      setShowAccount(false);
+      setShowMap(false);
+      setShowSearch(false);
+      setShowShortcuts(false);
+    }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keydown', onShortcutHelpKey);
+    window.addEventListener('keydown', onEscape);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keydown', onShortcutHelpKey);
+      window.removeEventListener('keydown', onEscape);
     };
   }, []);
 

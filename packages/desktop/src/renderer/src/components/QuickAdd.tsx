@@ -39,10 +39,13 @@ export default function QuickAdd(): React.ReactElement {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         setOpen(true);
+        return;
       }
+      if (e.key === 'Escape') close();
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function close(): void {
