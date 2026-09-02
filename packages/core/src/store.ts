@@ -5,6 +5,7 @@ import type {
   TaskPriority,
   Project,
   ProjectStatus,
+  ProjectTemplate,
   CalendarEvent,
   EventRecurrence,
   LogEntry,
@@ -34,6 +35,11 @@ export interface NewTaskInput {
 export interface NewProjectInput {
   name: string;
   status?: ProjectStatus;
+}
+
+export interface NewProjectTemplateInput {
+  name: string;
+  taskTitles: string[];
 }
 
 export interface NewEventInput {
@@ -221,6 +227,36 @@ export class WorklightStore {
       // Unlink rather than delete the tasks that pointed at this project.
       tasks: this.state.tasks.map((t) => (t.projectId === id ? { ...t, projectId: null } : t)),
     });
+  }
+
+  // ---------- project templates ----------
+
+  addProjectTemplate(input: NewProjectTemplateInput): ProjectTemplate {
+    const template: ProjectTemplate = {
+      id: generateId(),
+      name: input.name.trim(),
+      taskTitles: input.taskTitles.map((t) => t.trim()).filter(Boolean),
+      createdAt: new Date().toISOString(),
+    };
+    this.set({ ...this.state, projectTemplates: [...(this.state.projectTemplates ?? []), template] });
+    return template;
+  }
+
+  deleteProjectTemplate(id: string): void {
+    this.set({
+      ...this.state,
+      projectTemplates: (this.state.projectTemplates ?? []).filter((t) => t.id !== id),
+    });
+  }
+
+  /** Creates a project pre-populated with tasks from a saved template. */
+  addProjectFromTemplate(input: NewProjectInput, templateId: string): Project {
+    const project = this.addProject(input);
+    const template = (this.state.projectTemplates ?? []).find((t) => t.id === templateId);
+    for (const title of template?.taskTitles ?? []) {
+      this.addTask({ text: title, projectId: project.id });
+    }
+    return project;
   }
 
   // ---------- calendar events ----------

@@ -114,6 +114,7 @@ export function createInitialState(): WorklightState {
         updatedAt: now,
       },
     ],
+    projectTemplates: [],
     settings: {
       themeMode: 'system',
       accent: 'amber',
@@ -162,5 +163,11 @@ export function deserializeState(json: string): WorklightState {
   if (!Array.isArray(obj.tasks) || !Array.isArray(obj.projects)) {
     throw new InvalidStateError('Backup has malformed lists.');
   }
-  return { ...obj, version: STATE_SCHEMA_VERSION } as WorklightState;
+  // projectTemplates was added after this format shipped — default it
+  // instead of requiring it, so older backups still import cleanly.
+  return {
+    ...obj,
+    projectTemplates: Array.isArray(obj.projectTemplates) ? obj.projectTemplates : [],
+    version: STATE_SCHEMA_VERSION,
+  } as WorklightState;
 }

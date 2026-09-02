@@ -77,6 +77,14 @@ export interface Project {
   updatedAt: ISODateTime;
 }
 
+/** A reusable checklist of task titles applied to a new project on creation. */
+export interface ProjectTemplate {
+  id: ID;
+  name: string;
+  taskTitles: string[];
+  createdAt: ISODateTime;
+}
+
 export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface CalendarEvent {
@@ -166,6 +174,7 @@ export interface WorklightState {
   events: Record<DateKey, CalendarEvent[]>;
   logEntries: LogEntry[];
   ideas: Idea[];
+  projectTemplates: ProjectTemplate[];
   settings: Settings;
 }
 

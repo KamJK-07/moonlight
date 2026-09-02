@@ -43,6 +43,7 @@ function makeState(overrides: Partial<WorklightState> = {}): WorklightState {
     events: {},
     logEntries: [],
     ideas: [],
+    projectTemplates: [],
     settings: makeSettings(),
     ...overrides,
   };

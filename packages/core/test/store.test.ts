@@ -260,3 +260,39 @@ describe('WorklightStore — settings', () => {
     expect(store.getState().settings.accent).toBe('violet');
   });
 });
+
+describe('WorklightStore — project templates', () => {
+  it('saves a template with trimmed, non-empty task titles', () => {
+    const { store } = freshStore();
+    const template = store.addProjectTemplate({ name: '  Feature  ', taskTitles: ['Design', '  ', 'Ship'] });
+    expect(template.name).toBe('Feature');
+    expect(template.taskTitles).toEqual(['Design', 'Ship']);
+    expect(store.getState().projectTemplates.some((t) => t.id === template.id)).toBe(true);
+  });
+
+  it('deleting a template removes exactly that template', () => {
+    const { store } = freshStore();
+    const a = store.addProjectTemplate({ name: 'A', taskTitles: [] });
+    const b = store.addProjectTemplate({ name: 'B', taskTitles: [] });
+    store.deleteProjectTemplate(a.id);
+    const ids = store.getState().projectTemplates.map((t) => t.id);
+    expect(ids).not.toContain(a.id);
+    expect(ids).toContain(b.id);
+  });
+
+  it('creates a project pre-populated with the template\'s tasks', () => {
+    const { store } = freshStore();
+    const template = store.addProjectTemplate({ name: 'Feature', taskTitles: ['Design', 'Implement', 'Ship'] });
+    const project = store.addProjectFromTemplate({ name: 'New feature' }, template.id);
+    const tasks = store.getState().tasks.filter((t) => t.projectId === project.id);
+    expect(tasks.map((t) => t.text)).toEqual(['Design', 'Implement', 'Ship']);
+  });
+
+  it('creating from an unknown template id still creates the project, with no tasks', () => {
+    const { store } = freshStore();
+    const before = store.getState().tasks.length;
+    const project = store.addProjectFromTemplate({ name: 'Solo' }, 'does-not-exist');
+    expect(project.name).toBe('Solo');
+    expect(store.getState().tasks.length).toBe(before);
+  });
+});

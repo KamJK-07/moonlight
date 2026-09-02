@@ -173,6 +173,22 @@ ipcMain.handle('data:export', async (event, json: string) => {
   return { saved: true as const, filePath };
 });
 
+ipcMain.handle('markdown:export', async (event, defaultName: string, content: string) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options = {
+    title: 'Export project as Markdown',
+    defaultPath: `${defaultName}.md`,
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
+  };
+  const { canceled, filePath } = win
+    ? await dialog.showSaveDialog(win, options)
+    : await dialog.showSaveDialog(options);
+  if (canceled || !filePath) return { saved: false as const };
+  const { promises: fs } = await import('fs');
+  await fs.writeFile(filePath, content, 'utf-8');
+  return { saved: true as const, filePath };
+});
+
 ipcMain.handle('data:import', async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const options: Electron.OpenDialogOptions = {

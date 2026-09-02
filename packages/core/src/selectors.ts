@@ -100,3 +100,37 @@ export function groupLogEntriesByWeek(entries: LogEntry[]): LogWeekGroup[] {
   }
   return groups;
 }
+
+/** Renders a project's notes, tasks, and log entries as a standalone Markdown document. */
+export function projectToMarkdown(project: Project, tasks: Task[], logEntries: LogEntry[]): string {
+  const lines: string[] = [`# ${project.name}`, ''];
+  lines.push(`**Status:** ${project.status}`);
+  if (project.githubRepo) lines.push(`**GitHub:** ${project.githubRepo}`);
+  lines.push('');
+
+  if (project.notes.trim()) {
+    lines.push('## Notes', '', project.notes.trim(), '');
+  }
+
+  const linked = tasksForProject(tasks, project.id);
+  if (linked.length > 0) {
+    lines.push('## Tasks', '');
+    for (const t of linked) {
+      const box = t.done ? '[x]' : '[ ]';
+      const due = t.due ? ` (due ${t.due})` : '';
+      lines.push(`- ${box} ${t.text}${due}`);
+    }
+    lines.push('');
+  }
+
+  const projectLog = sortLogEntries(logEntries.filter((e) => e.projectId === project.id));
+  if (projectLog.length > 0) {
+    lines.push('## Progress log', '');
+    for (const entry of projectLog) {
+      lines.push(`- ${entry.date}: ${entry.text}`);
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n').trimEnd() + '\n';
+}

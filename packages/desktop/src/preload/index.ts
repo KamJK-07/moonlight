@@ -27,6 +27,8 @@ const moonlightBridge = {
   exportData: (json: string): Promise<{ saved: boolean; filePath?: string }> =>
     ipcRenderer.invoke('data:export', json),
   importData: (): Promise<{ loaded: boolean; json?: string }> => ipcRenderer.invoke('data:import'),
+  exportMarkdown: (defaultName: string, content: string): Promise<{ saved: boolean; filePath?: string }> =>
+    ipcRenderer.invoke('markdown:export', defaultName, content),
 
   addIdeaImage: (): Promise<string | null> => ipcRenderer.invoke('idea-image:add'),
   removeIdeaImage: (filename: string): Promise<void> => ipcRenderer.invoke('idea-image:remove', filename),

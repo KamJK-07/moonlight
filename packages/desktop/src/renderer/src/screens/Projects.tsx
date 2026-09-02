@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { projectProgress, PROJECT_COLORS } from '@moonlight/core';
-import type { ProjectStatus } from '@moonlight/core';
+import { projectProgress, projectToMarkdown, PROJECT_COLORS } from '@moonlight/core';
+import type { ProjectStatus, Project } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 
@@ -48,6 +48,7 @@ export default function ProjectsScreen({
   const { state, store } = useWorklight();
   const [name, setName] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
+  const [templateId, setTemplateId] = useState('');
   const { status: githubStatus, client: githubClient } = useGithub();
   const [prCounts, setPrCounts] = useState<Record<string, number>>({});
 
@@ -76,14 +77,30 @@ export default function ProjectsScreen({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    store.addProject({ name, status });
+    if (templateId) store.addProjectFromTemplate({ name, status }, templateId);
+    else store.addProject({ name, status });
     setName('');
     setStatus('active');
+    setTemplateId('');
+  }
+
+  function saveAsTemplate(p: Project): void {
+    const templateName = window.prompt('Template name', p.name);
+    if (!templateName || !templateName.trim()) return;
+    const taskTitles = state.tasks.filter((t) => t.projectId === p.id && !t.done).map((t) => t.text);
+    store.addProjectTemplate({ name: templateName, taskTitles });
+  }
+
+  function exportMarkdown(p: Project): void {
+    const md = projectToMarkdown(p, state.tasks, state.logEntries);
+    const safeName = p.name.replace(/[\\/:*?"<>|]/g, '-');
+    void window.moonlight.exportMarkdown(safeName, md);
   }
 
   const visible = state.projects.filter((p) => !p.archived);
   const archived = state.projects.filter((p) => p.archived);
   const repos = state.settings.linkedRepos;
+  const templates = state.projectTemplates ?? [];
 
   return (
     <div>
@@ -102,6 +119,16 @@ export default function ProjectsScreen({
               <option value="paused">Paused</option>
               <option value="done">Done</option>
             </select>
+            {templates.length > 0 && (
+              <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+                <option value="">Blank project</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    From template: {t.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <button className="btn-accent" type="submit">
               Add project
             </button>
@@ -139,7 +166,13 @@ export default function ProjectsScreen({
                     {p.name}
                   </button>
                 </h4>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button className="btn-plain" onClick={() => saveAsTemplate(p)} title="Save this project's open tasks as a reusable template">
+                    Template
+                  </button>
+                  <button className="btn-plain" onClick={() => exportMarkdown(p)} title="Export notes, tasks, and log as Markdown">
+                    Export
+                  </button>
                   <button
                     className="btn-plain"
                     onClick={() => store.updateProject(p.id, { archived: true })}
@@ -210,6 +243,25 @@ export default function ProjectsScreen({
           );
         })}
       </div>
+
+      {templates.length > 0 && (
+        <div>
+          <div className="group-label">Project templates ({templates.length})</div>
+          <ul className="list">
+            {templates.map((t) => (
+              <li key={t.id} className="row">
+                <span className="row-text">{t.name}</span>
+                <span className="tag mono">
+                  {t.taskTitles.length} task{t.taskTitles.length === 1 ? '' : 's'}
+                </span>
+                <button className="btn-plain" onClick={() => store.deleteProjectTemplate(t.id)} aria-label="Delete template">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {archived.length > 0 && (
         <div>

@@ -5,6 +5,7 @@ import {
   computeStreak,
   activeProjectCount,
   groupLogEntriesByWeek,
+  projectToMarkdown,
 } from '../src/selectors';
 import type { Task, Project, LogEntry } from '../src/types';
 
@@ -193,5 +194,49 @@ describe('groupLogEntriesByWeek', () => {
 
   it('returns an empty array for no entries', () => {
     expect(groupLogEntriesByWeek([])).toEqual([]);
+  });
+});
+
+describe('projectToMarkdown', () => {
+  const project: Project = {
+    id: 'p1',
+    name: 'Moonlight',
+    status: 'active',
+    notes: 'A personal creative hub.',
+    color: null,
+    githubRepo: 'kamjk/moonlight',
+    archived: false,
+    createdAt: '2026-08-30T00:00:00.000Z',
+    updatedAt: '2026-08-30T00:00:00.000Z',
+  };
+
+  it('includes the project name, status, repo, notes, tasks, and log entries in order', () => {
+    const tasks = [
+      makeTask({ id: 't1', projectId: 'p1', text: 'Ship it', done: true }),
+      makeTask({ id: 't2', projectId: 'p1', text: 'Write docs', due: '2026-09-05' }),
+      makeTask({ id: 't3', projectId: 'other', text: 'Not this project' }),
+    ];
+    const logEntries = [
+      makeLogEntry({ id: 'l1', projectId: 'p1', date: '2026-08-30', text: 'Started' }),
+      makeLogEntry({ id: 'l2', projectId: 'other', date: '2026-08-31', text: 'Unrelated' }),
+    ];
+    const md = projectToMarkdown(project, tasks, logEntries);
+    expect(md).toContain('# Moonlight');
+    expect(md).toContain('**Status:** active');
+    expect(md).toContain('**GitHub:** kamjk/moonlight');
+    expect(md).toContain('A personal creative hub.');
+    expect(md).toContain('- [x] Ship it');
+    expect(md).toContain('- [ ] Write docs (due 2026-09-05)');
+    expect(md).not.toContain('Not this project');
+    expect(md).toContain('- 2026-08-30: Started');
+    expect(md).not.toContain('Unrelated');
+  });
+
+  it('omits the Notes/Tasks/Log sections entirely when there is nothing to show', () => {
+    const bare: Project = { ...project, notes: '' };
+    const md = projectToMarkdown(bare, [], []);
+    expect(md).not.toContain('## Notes');
+    expect(md).not.toContain('## Tasks');
+    expect(md).not.toContain('## Progress log');
   });
 });
