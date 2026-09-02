@@ -85,9 +85,13 @@ export default function ProjectsScreen({
   }
 
   function saveAsTemplate(p: Project): void {
+    const taskTitles = state.tasks.filter((t) => t.projectId === p.id).map((t) => t.text);
+    if (taskTitles.length === 0) {
+      window.alert('This project has no tasks yet — add some before saving it as a template.');
+      return;
+    }
     const templateName = window.prompt('Template name', p.name);
     if (!templateName || !templateName.trim()) return;
-    const taskTitles = state.tasks.filter((t) => t.projectId === p.id && !t.done).map((t) => t.text);
     store.addProjectTemplate({ name: templateName, taskTitles });
   }
 
@@ -167,7 +171,7 @@ export default function ProjectsScreen({
                   </button>
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn-plain" onClick={() => saveAsTemplate(p)} title="Save this project's open tasks as a reusable template">
+                  <button className="btn-plain" onClick={() => saveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
                     Template
                   </button>
                   <button className="btn-plain" onClick={() => exportMarkdown(p)} title="Export notes, tasks, and log as Markdown">
