@@ -253,16 +253,23 @@ export default function IdeasScreen(): React.ReactElement {
             </button>
           )}
         </div>
-        <select
-          value={idea.status}
-          onChange={(e) => store.setIdeaStatus(idea.id, e.target.value as IdeaStatus)}
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <select
+            value={idea.status}
+            onChange={(e) => store.setIdeaStatus(idea.id, e.target.value as IdeaStatus)}
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+          {idea.status !== 'shipped' && (
+            <button className="btn-plain" onClick={() => store.setIdeaStatus(idea.id, 'shipped')}>
+              Ship it
+            </button>
+          )}
+        </div>
         <IdeaLinks
           links={idea.links ?? []}
           onAdd={(url) => store.addIdeaLink(idea.id, url)}

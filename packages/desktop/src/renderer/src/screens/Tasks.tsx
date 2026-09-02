@@ -171,8 +171,18 @@ export default function TasksScreen(): React.ReactElement {
 
       {groups.done.length > 0 && (
         <div className="card">
-          <div className="group-label" style={{ marginTop: 0 }}>
-            Done
+          <div className="group-label" style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Done</span>
+            <button
+              className="btn-plain"
+              onClick={() => {
+                if (window.confirm(`Delete ${groups.done.length} completed task${groups.done.length === 1 ? '' : 's'}? This can't be undone.`)) {
+                  for (const t of groups.done) store.deleteTask(t.id);
+                }
+              }}
+            >
+              Clear completed
+            </button>
           </div>
           <ul className="list">
             {groups.done.map((t) => {
