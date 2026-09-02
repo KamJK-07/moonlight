@@ -49,6 +49,8 @@ export default function ProjectsScreen({
   const [name, setName] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
   const [templateId, setTemplateId] = useState('');
+  const [templatingProjectId, setTemplatingProjectId] = useState<string | null>(null);
+  const [templateNameDraft, setTemplateNameDraft] = useState('');
   const { status: githubStatus, client: githubClient } = useGithub();
   const [prCounts, setPrCounts] = useState<Record<string, number>>({});
 
@@ -84,15 +86,23 @@ export default function ProjectsScreen({
     setTemplateId('');
   }
 
-  function saveAsTemplate(p: Project): void {
+  function beginSaveAsTemplate(p: Project): void {
     const taskTitles = state.tasks.filter((t) => t.projectId === p.id).map((t) => t.text);
     if (taskTitles.length === 0) {
       window.alert('This project has no tasks yet — add some before saving it as a template.');
       return;
     }
-    const templateName = window.prompt('Template name', p.name);
-    if (!templateName || !templateName.trim()) return;
-    store.addProjectTemplate({ name: templateName, taskTitles });
+    setTemplateNameDraft(p.name);
+    setTemplatingProjectId(p.id);
+  }
+
+  function confirmSaveTemplate(p: Project): void {
+    const trimmed = templateNameDraft.trim();
+    if (!trimmed) return;
+    const taskTitles = state.tasks.filter((t) => t.projectId === p.id).map((t) => t.text);
+    store.addProjectTemplate({ name: trimmed, taskTitles });
+    setTemplatingProjectId(null);
+    setTemplateNameDraft('');
   }
 
   function exportMarkdown(p: Project): void {
@@ -171,7 +181,7 @@ export default function ProjectsScreen({
                   </button>
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn-plain" onClick={() => saveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
+                  <button className="btn-plain" onClick={() => beginSaveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
                     Template
                   </button>
                   <button className="btn-plain" onClick={() => exportMarkdown(p)} title="Export notes, tasks, and log as Markdown">
@@ -189,6 +199,30 @@ export default function ProjectsScreen({
                   </button>
                 </div>
               </div>
+              {templatingProjectId === p.id && (
+                <form
+                  className="form-row"
+                  style={{ marginBottom: 0 }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    confirmSaveTemplate(p);
+                  }}
+                >
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Template name"
+                    value={templateNameDraft}
+                    onChange={(e) => setTemplateNameDraft(e.target.value)}
+                  />
+                  <button className="btn-accent" type="submit">
+                    Save
+                  </button>
+                  <button className="btn-plain" type="button" onClick={() => setTemplatingProjectId(null)}>
+                    Cancel
+                  </button>
+                </form>
+              )}
               <div>
                 <span className={`pill ${p.status}`}>{p.status}</span>
                 {p.githubRepo && <span className="tag mono" style={{ marginLeft: '0.4rem' }}>{p.githubRepo}</span>}
