@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { ThemeMode } from '@moonlight/core';
 import type { ViewId } from '../App';
 import { useWorklight } from '../store/WorklightContext';
 
-type ResultKind = 'task' | 'project' | 'idea' | 'log' | 'event';
+type ResultKind = 'task' | 'project' | 'idea' | 'log' | 'event' | 'action';
 
 interface SearchResult {
   kind: ResultKind;
   id: string;
   label: string;
   meta: string;
+  run?: () => void;
 }
 
 const KIND_LABEL: Record<ResultKind, string> = {
@@ -17,20 +19,30 @@ const KIND_LABEL: Record<ResultKind, string> = {
   idea: 'Idea',
   log: 'Log',
   event: 'Event',
+  action: 'Action',
 };
 
 const MAX_PER_KIND = 8;
+const NEXT_THEME: Record<ThemeMode, ThemeMode> = { system: 'light', light: 'dark', dark: 'system' };
 
 export default function GlobalSearch({
   onClose,
   onOpenProject,
   onGoTo,
+  onOpenSettings,
+  onOpenMap,
+  onOpenAccount,
+  onQuickAdd,
 }: {
   onClose: () => void;
   onOpenProject: (id: string) => void;
   onGoTo: (view: ViewId) => void;
+  onOpenSettings: () => void;
+  onOpenMap: () => void;
+  onOpenAccount: () => void;
+  onQuickAdd: () => void;
 }): React.ReactElement {
-  const { state } = useWorklight();
+  const { state, store } = useWorklight();
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,8 +53,22 @@ export default function GlobalSearch({
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
     const out: SearchResult[] = [];
+
+    const actions: Array<{ id: string; label: string; run: () => void }> = [
+      { id: 'quickadd', label: 'New… (quick add)', run: onQuickAdd },
+      { id: 'theme', label: `Switch to ${NEXT_THEME[state.settings.themeMode]} theme`, run: () => store.setThemeMode(NEXT_THEME[state.settings.themeMode]) },
+      { id: 'settings', label: 'Open Settings', run: onOpenSettings },
+      { id: 'map', label: 'Open project map', run: onOpenMap },
+      { id: 'account', label: 'Open Account / GitHub', run: onOpenAccount },
+    ];
+    for (const a of actions) {
+      if (!q || a.label.toLowerCase().includes(q)) {
+        out.push({ kind: 'action', id: a.id, label: a.label, meta: '', run: a.run });
+      }
+    }
+
+    if (!q) return out;
 
     for (const t of state.tasks) {
       if (out.filter((r) => r.kind === 'task').length >= MAX_PER_KIND) break;
@@ -77,13 +103,18 @@ export default function GlobalSearch({
       }
     }
     return out;
-  }, [query, state]);
+  }, [query, state, store, onQuickAdd, onOpenSettings, onOpenMap, onOpenAccount]);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [query]);
 
   function activate(result: SearchResult) {
+    if (result.run) {
+      result.run();
+      onClose();
+      return;
+    }
     switch (result.kind) {
       case 'task':
         onGoTo('tasks');
@@ -130,23 +161,21 @@ export default function GlobalSearch({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        {query.trim() && (
-          <ul className="search-results">
-            {results.length === 0 && <li className="empty">No matches.</li>}
-            {results.map((r, i) => (
-              <li
-                key={`${r.kind}-${r.id}`}
-                className={`search-result${i === activeIndex ? ' active' : ''}`}
-                onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => activate(r)}
-              >
-                <span className="tag search-kind">{KIND_LABEL[r.kind]}</span>
-                <span className="row-text">{r.label}</span>
-                <span className="search-meta mono">{r.meta}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul className="search-results">
+          {results.length === 0 && <li className="empty">No matches.</li>}
+          {results.map((r, i) => (
+            <li
+              key={`${r.kind}-${r.id}`}
+              className={`search-result${i === activeIndex ? ' active' : ''}`}
+              onMouseEnter={() => setActiveIndex(i)}
+              onClick={() => activate(r)}
+            >
+              <span className="tag search-kind">{KIND_LABEL[r.kind]}</span>
+              <span className="row-text">{r.label}</span>
+              {r.meta && <span className="search-meta mono">{r.meta}</span>}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

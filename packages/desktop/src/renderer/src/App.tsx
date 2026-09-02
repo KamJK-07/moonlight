@@ -56,9 +56,18 @@ function Shell(): React.ReactElement {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key.toLowerCase() === 's') {
         e.preventDefault();
         setShowSearch(true);
+        return;
+      }
+      const tabIndex = Number(e.key) - 1;
+      if (Number.isInteger(tabIndex) && VIEWS[tabIndex]) {
+        e.preventDefault();
+        setView(VIEWS[tabIndex]!.id);
+        setShowMap(false);
+        setShowSearch(false);
       }
     }
     window.addEventListener('keydown', onKeyDown);
@@ -196,7 +205,27 @@ function Shell(): React.ReactElement {
         <MapView onClose={() => setShowMap(false)} onOpenProject={openProject} onOpenTasks={() => goTo('tasks')} />
       )}
       {showSearch && (
-        <GlobalSearch onClose={() => setShowSearch(false)} onOpenProject={openProject} onGoTo={goTo} />
+        <GlobalSearch
+          onClose={() => setShowSearch(false)}
+          onOpenProject={openProject}
+          onGoTo={goTo}
+          onOpenSettings={() => {
+            setShowSearch(false);
+            setShowSettings(true);
+          }}
+          onOpenMap={() => {
+            setShowSearch(false);
+            setShowMap(true);
+          }}
+          onOpenAccount={() => {
+            setShowSearch(false);
+            setShowAccount(true);
+          }}
+          onQuickAdd={() => {
+            setShowSearch(false);
+            window.dispatchEvent(new Event('moonlight:quick-add'));
+          }}
+        />
       )}
     </div>
   );

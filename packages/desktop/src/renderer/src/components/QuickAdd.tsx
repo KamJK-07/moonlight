@@ -27,6 +27,14 @@ export default function QuickAdd(): React.ReactElement {
   useEffect(() => window.moonlight.onQuickAddRequested(() => setOpen(true)), []);
 
   useEffect(() => {
+    function onRequested(): void {
+      setOpen(true);
+    }
+    window.addEventListener('moonlight:quick-add', onRequested);
+    return () => window.removeEventListener('moonlight:quick-add', onRequested);
+  }, []);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
