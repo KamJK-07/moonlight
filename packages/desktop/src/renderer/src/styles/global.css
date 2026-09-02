@@ -196,7 +196,7 @@ button:disabled:active { transform: none; }
 .nav-item.active { background: var(--accent-soft); color: var(--ink); border-color: var(--border); font-weight: 600; }
 .nav-count { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
 .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 0.2rem; }
-.theme-row { display: flex; gap: 0.4rem; }
+.theme-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .swatch { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px solid var(--border); padding: 0; flex-shrink: 0; }
 .swatch.active { border-color: var(--ink); }
 .account-button {
@@ -340,7 +340,8 @@ button:disabled:active { transform: none; }
 .project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.8rem; }
 .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem; display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
 .project-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
-.project-card h4 { font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; }
+.project-card h4 { font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+.project-card-secondary { display: flex; gap: 0.5rem; margin-top: -0.25rem; }
 .progress-track { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
 .progress-fill { height: 100%; background: var(--accent); }
 .progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); }

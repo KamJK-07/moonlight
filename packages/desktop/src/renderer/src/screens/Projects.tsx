@@ -180,13 +180,7 @@ export default function ProjectsScreen({
                     {p.name}
                   </button>
                 </h4>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn-plain" onClick={() => beginSaveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
-                    Template
-                  </button>
-                  <button className="btn-plain" onClick={() => exportMarkdown(p)} title="Export notes, tasks, and log as Markdown">
-                    Export
-                  </button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
                   <button
                     className="btn-plain"
                     onClick={() => store.updateProject(p.id, { archived: true })}
@@ -198,6 +192,14 @@ export default function ProjectsScreen({
                     ×
                   </button>
                 </div>
+              </div>
+              <div className="project-card-secondary">
+                <button className="btn-plain" onClick={() => beginSaveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
+                  Template
+                </button>
+                <button className="btn-plain" onClick={() => exportMarkdown(p)} title="Export notes, tasks, and log as Markdown">
+                  Export
+                </button>
               </div>
               {templatingProjectId === p.id && (
                 <form
