@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { projectProgress } from '@moonlight/core';
 import type { Project, Task } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
+
+const MIN_ZOOM = 0.35;
+const MAX_ZOOM = 3;
 
 const WIDTH = 1000;
 const HEIGHT = 640;
@@ -147,11 +150,110 @@ export default function MapView({
 }): React.ReactElement {
   const { state } = useWorklight();
   const [selected, setSelected] = useState<GraphNode | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragRef = useRef<
+    | { kind: 'pan'; startClient: { x: number; y: number }; startPan: { x: number; y: number }; moved: boolean }
+    | { kind: 'node'; id: string; offset: { x: number; y: number }; startClient: { x: number; y: number }; moved: boolean }
+    | null
+  >(null);
 
-  const { nodes, edges } = useMemo(
+  const { nodes: baseNodes, edges } = useMemo(
     () => buildGraph(state.projects, state.tasks),
     [state.projects, state.tasks],
   );
+  const nodes = useMemo(
+    () => baseNodes.map((n) => (positions[n.id] ? { ...n, ...positions[n.id] } : n)),
+    [baseNodes, positions],
+  );
+
+  function toGraphPoint(clientX: number, clientY: number): { x: number; y: number } {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    const p = pt.matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  }
+
+  function beginPan(e: React.PointerEvent): void {
+    dragRef.current = { kind: 'pan', startClient: { x: e.clientX, y: e.clientY }, startPan: pan, moved: false };
+  }
+
+  function beginNodeDrag(e: React.PointerEvent, node: GraphNode): void {
+    e.stopPropagation();
+    const graphPt = toGraphPoint(e.clientX, e.clientY);
+    const under = { x: (graphPt.x - pan.x) / zoom, y: (graphPt.y - pan.y) / zoom };
+    dragRef.current = {
+      kind: 'node',
+      id: node.id,
+      offset: { x: under.x - node.x, y: under.y - node.y },
+      startClient: { x: e.clientX, y: e.clientY },
+      moved: false,
+    };
+  }
+
+  useEffect(() => {
+    function onMove(e: PointerEvent): void {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dx = e.clientX - drag.startClient.x;
+      const dy = e.clientY - drag.startClient.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+      if (drag.kind === 'pan') {
+        const startPt = toGraphPoint(drag.startClient.x, drag.startClient.y);
+        const nowPt = toGraphPoint(e.clientX, e.clientY);
+        setPan({ x: drag.startPan.x + (nowPt.x - startPt.x), y: drag.startPan.y + (nowPt.y - startPt.y) });
+      } else {
+        const graphPt = toGraphPoint(e.clientX, e.clientY);
+        const under = { x: (graphPt.x - pan.x) / zoom, y: (graphPt.y - pan.y) / zoom };
+        setPositions((prev) => ({
+          ...prev,
+          [drag.id]: { x: under.x - drag.offset.x, y: under.y - drag.offset.y },
+        }));
+      }
+    }
+    function onUp(): void {
+      dragRef.current = null;
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pan, zoom]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    function onWheel(e: WheelEvent): void {
+      e.preventDefault();
+      const factor = Math.pow(1.0015, -e.deltaY);
+      setZoom((prevZoom) => {
+        const nextZoom = clamp(prevZoom * factor, MIN_ZOOM, MAX_ZOOM);
+        const graphPt = toGraphPoint(e.clientX, e.clientY);
+        setPan((prevPan) => {
+          const under = { x: (graphPt.x - prevPan.x) / prevZoom, y: (graphPt.y - prevPan.y) / prevZoom };
+          return { x: graphPt.x - under.x * nextZoom, y: graphPt.y - under.y * nextZoom };
+        });
+        return nextZoom;
+      });
+    }
+    svg.addEventListener('wheel', onWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  }, []);
+
+  function resetView(): void {
+    setPan({ x: 0, y: 0 });
+    setZoom(1);
+  }
 
   const connected = useMemo(() => {
     if (!selected) return null;
@@ -174,6 +276,17 @@ export default function MapView({
     <div className="map-overlay">
       <div className="map-header">
         <h2>Project map</h2>
+        <div className="map-zoom-controls">
+          <button className="btn-plain" onClick={() => setZoom((z) => clamp(z / 1.3, MIN_ZOOM, MAX_ZOOM))} aria-label="Zoom out">
+            −
+          </button>
+          <button className="btn-plain" onClick={resetView} aria-label="Reset view">
+            {Math.round(zoom * 100)}%
+          </button>
+          <button className="btn-plain" onClick={() => setZoom((z) => clamp(z * 1.3, MIN_ZOOM, MAX_ZOOM))} aria-label="Zoom in">
+            +
+          </button>
+        </div>
         <button className="btn-plain" onClick={onClose} aria-label="Close project map">
           × Close
         </button>
@@ -183,50 +296,58 @@ export default function MapView({
           {nodes.length === 0 ? (
             <p className="empty">Add a project or task to see it here.</p>
           ) : (
-            <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="map-svg">
-              {edges.map((e, i) => {
-                const a = nodes.find((n) => n.id === e.source);
-                const b = nodes.find((n) => n.id === e.target);
-                if (!a || !b) return null;
-                const active = !connected || (connected.has(a.id) && connected.has(b.id));
-                return (
-                  <line
-                    key={i}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    className="map-edge"
-                    opacity={active ? 0.6 : 0.12}
-                  />
-                );
-              })}
-              {nodes.map((node) => {
-                const isProject = node.kind === 'project';
-                const r = isProject ? 15 : 6;
-                const active = !connected || connected.has(node.id);
-                const isSelected = selected?.id === node.id;
-                return (
-                  <g
-                    key={node.id}
-                    className="map-node"
-                    opacity={active ? (node.dimmed ? 0.5 : 1) : 0.15}
-                    onClick={() => setSelected(node)}
-                  >
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={r}
-                      fill={isProject ? node.color ?? 'var(--accent)' : 'var(--surface)'}
-                      stroke={isSelected ? 'var(--accent)' : isProject ? 'transparent' : 'var(--accent)'}
-                      strokeWidth={isSelected ? 3 : isProject ? 0 : 1.5}
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+              className="map-svg"
+              onPointerDown={beginPan}
+            >
+              <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+                {edges.map((e, i) => {
+                  const a = nodes.find((n) => n.id === e.source);
+                  const b = nodes.find((n) => n.id === e.target);
+                  if (!a || !b) return null;
+                  const active = !connected || (connected.has(a.id) && connected.has(b.id));
+                  return (
+                    <line
+                      key={i}
+                      x1={a.x}
+                      y1={a.y}
+                      x2={b.x}
+                      y2={b.y}
+                      className="map-edge"
+                      opacity={active ? 0.6 : 0.12}
                     />
-                    <text x={node.x} y={node.y + r + 12} textAnchor="middle" className="map-label">
-                      {truncate(node.label, isProject ? 22 : 18)}
-                    </text>
-                  </g>
-                );
-              })}
+                  );
+                })}
+                {nodes.map((node) => {
+                  const isProject = node.kind === 'project';
+                  const r = isProject ? 15 : 6;
+                  const active = !connected || connected.has(node.id);
+                  const isSelected = selected?.id === node.id;
+                  return (
+                    <g
+                      key={node.id}
+                      className="map-node"
+                      opacity={active ? (node.dimmed ? 0.5 : 1) : 0.15}
+                      onPointerDown={(e) => beginNodeDrag(e, node)}
+                      onClick={() => setSelected(node)}
+                    >
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r={r}
+                        fill={isProject ? node.color ?? 'var(--accent)' : 'var(--surface)'}
+                        stroke={isSelected ? 'var(--accent)' : isProject ? 'transparent' : 'var(--accent)'}
+                        strokeWidth={isSelected ? 3 : isProject ? 0 : 1.5}
+                      />
+                      <text x={node.x} y={node.y + r + 12} textAnchor="middle" className="map-label">
+                        {truncate(node.label, isProject ? 22 : 18)}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
             </svg>
           )}
         </div>

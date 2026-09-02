@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, dialog, protocol, Tray, Menu, nativeImage, globalShortcut } from 'electron';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { is } from '@electron-toolkit/utils';
@@ -34,6 +34,50 @@ const secretStores = {
 } as const;
 type SecretName = keyof typeof secretStores;
 
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+
+/** Solid-color circle icon for the tray, drawn as a raw bitmap so the app ships no binary image asset. */
+function buildTrayIcon(): Electron.NativeImage {
+  const size = 32;
+  const buf = Buffer.alloc(size * size * 4);
+  const c = size / 2 - 0.5;
+  const r = size / 2 - 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - c;
+      const dy = y - c;
+      const idx = (y * size + x) * 4;
+      if (dx * dx + dy * dy <= r * r) {
+        // Accent orange (#E07B1E) as BGRA, which is what createFromBitmap expects.
+        buf[idx] = 0x1e;
+        buf[idx + 1] = 0x7b;
+        buf[idx + 2] = 0xe0;
+        buf[idx + 3] = 0xff;
+      }
+    }
+  }
+  return nativeImage.createFromBitmap(buf, { width: size, height: size });
+}
+
+function getOrCreateWindow(): BrowserWindow {
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+  createWindow();
+  return mainWindow!;
+}
+
+function showAndFocus(): void {
+  const win = getOrCreateWindow();
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+function openQuickAdd(): void {
+  showAndFocus();
+  mainWindow?.webContents.send('quick-add:open');
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1180,
@@ -49,6 +93,11 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  mainWindow = win;
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
   });
 
   win.on('ready-to-show', () => win.show());
@@ -196,8 +245,30 @@ void app.whenReady().then(async () => {
     // should reopen one. Harmless no-op on Windows/Linux.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  tray = new Tray(buildTrayIcon());
+  tray.setToolTip('Moonlight');
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Quick Add', accelerator: 'CommandOrControl+Shift+Space', click: openQuickAdd },
+      { label: 'Show Moonlight', click: showAndFocus },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() },
+    ]),
+  );
+  tray.on('click', showAndFocus);
+
+  // Global (system-wide) hotkey so quick-add works even when the window
+  // isn't focused — the whole point of having it live in the tray. If
+  // another app already owns this combo, registration just silently
+  // fails; the tray menu item and in-app Ctrl/Cmd+N still work either way.
+  globalShortcut.register('CommandOrControl+Shift+Space', openQuickAdd);
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });

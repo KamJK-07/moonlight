@@ -31,6 +31,13 @@ const moonlightBridge = {
   addIdeaImage: (): Promise<string | null> => ipcRenderer.invoke('idea-image:add'),
   removeIdeaImage: (filename: string): Promise<void> => ipcRenderer.invoke('idea-image:remove', filename),
 
+  /** Fires when the tray's "Quick Add" item or its global hotkey is used. Returns an unsubscribe function. */
+  onQuickAddRequested: (callback: () => void): (() => void) => {
+    const listener = (): void => callback();
+    ipcRenderer.on('quick-add:open', listener);
+    return () => ipcRenderer.removeListener('quick-add:open', listener);
+  },
+
   platform: process.platform,
 };
 

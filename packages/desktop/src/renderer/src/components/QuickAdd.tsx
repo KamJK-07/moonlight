@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { todayKey } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 
@@ -24,6 +24,19 @@ export default function QuickAdd(): React.ReactElement {
   const [type, setType] = useState<QuickAddType | null>(null);
   const [text, setText] = useState('');
 
+  useEffect(() => window.moonlight.onQuickAddRequested(() => setOpen(true)), []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent): void {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   function close(): void {
     setOpen(false);
     setType(null);
@@ -42,7 +55,12 @@ export default function QuickAdd(): React.ReactElement {
 
   return (
     <>
-      <button className="quick-add-fab btn-accent" onClick={() => setOpen(true)} aria-label="Quick add">
+      <button
+        className="quick-add-fab btn-accent"
+        onClick={() => setOpen(true)}
+        aria-label="Quick add"
+        title="Quick add (Ctrl/Cmd+N)"
+      >
         +
       </button>
       {open && (
