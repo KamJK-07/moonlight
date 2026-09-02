@@ -12,7 +12,7 @@ export default function TodayScreen({ onNavigate }: { onNavigate: (v: ViewId) =>
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
-  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker } = useTaskDetails();
+  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker, duplicate: duplicateTask } = useTaskDetails();
   const [logText, setLogText] = useState('');
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
@@ -125,6 +125,7 @@ export default function TodayScreen({ onNavigate }: { onNavigate: (v: ViewId) =>
               onSetRecurrence={setTaskRecurrence}
               onAddBlocker={addBlocker}
               onRemoveBlocker={removeBlocker}
+              onDuplicate={duplicateTask}
             />
           ))}
         </ul>

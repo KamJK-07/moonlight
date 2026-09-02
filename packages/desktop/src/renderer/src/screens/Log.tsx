@@ -25,6 +25,8 @@ export default function LogScreen(): React.ReactElement {
   const [recap, setRecap] = useState<string | null>(null);
   const [recapping, setRecapping] = useState(false);
   const [recapError, setRecapError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState('');
 
   useEffect(() => {
     void anthropic.has().then(setHasKey);
@@ -70,7 +72,12 @@ export default function LogScreen(): React.ReactElement {
     setRecap(null);
   }
 
-  const weekGroups = groupLogEntriesByWeek(state.logEntries);
+  const filteredEntries = state.logEntries.filter((e) => {
+    if (search.trim() && !e.text.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    if (filterProjectId && e.projectId !== filterProjectId) return false;
+    return true;
+  });
+  const weekGroups = groupLogEntriesByWeek(filteredEntries);
   const weeklyTaskCounts = tasksCompletedByWeek(state.tasks, 8);
   const maxWeeklyCount = Math.max(1, ...weeklyTaskCounts.map((w) => w.count));
 
@@ -102,6 +109,27 @@ export default function LogScreen(): React.ReactElement {
           </div>
         </form>
       </div>
+
+      {state.logEntries.length > 0 && (
+        <div className="card">
+          <div className="form-row" style={{ marginBottom: 0 }}>
+            <input
+              type="text"
+              placeholder="Search log entries…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)}>
+              <option value="">All projects</option>
+              {state.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3>Tasks completed per week</h3>
@@ -155,7 +183,7 @@ export default function LogScreen(): React.ReactElement {
       )}
 
       {weekGroups.length === 0 ? (
-        <p className="empty">No entries yet.</p>
+        <p className="empty">{state.logEntries.length === 0 ? 'No entries yet.' : 'No entries match your search.'}</p>
       ) : (
         <div className="card">
           {weekGroups.map((g) => (

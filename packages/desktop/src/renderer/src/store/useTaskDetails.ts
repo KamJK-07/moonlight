@@ -11,8 +11,11 @@ export function useTaskDetails(): {
   setRecurrence: (taskId: string, recurrence: EventRecurrence) => void;
   addBlocker: (taskId: string, blockerId: string) => void;
   removeBlocker: (taskId: string, blockerId: string) => void;
+  duplicate: (taskId: string) => void;
 } {
   const { state, store } = useWorklight();
+
+  const duplicate = useCallback((taskId: string) => store.duplicateTask(taskId), [store]);
 
   const setRecurrence = useCallback(
     (taskId: string, recurrence: EventRecurrence) => store.updateTask(taskId, { recurrence }),
@@ -35,5 +38,5 @@ export function useTaskDetails(): {
     [state.tasks, store],
   );
 
-  return { setRecurrence, addBlocker, removeBlocker };
+  return { setRecurrence, addBlocker, removeBlocker, duplicate };
 }

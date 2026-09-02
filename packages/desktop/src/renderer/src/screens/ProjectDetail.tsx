@@ -22,7 +22,7 @@ export default function ProjectDetail({
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
-  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker } = useTaskDetails();
+  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker, duplicate: duplicateTask } = useTaskDetails();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   const [openPrs, setOpenPrs] = useState<GithubActivityItem[] | null>(null);
 
@@ -74,6 +74,7 @@ export default function ProjectDetail({
               onSetRecurrence={setTaskRecurrence}
               onAddBlocker={addBlocker}
               onRemoveBlocker={removeBlocker}
+              onDuplicate={duplicateTask}
             />
           ))}
         </ul>
@@ -185,6 +186,7 @@ export default function ProjectDetail({
                   onSetRecurrence={setTaskRecurrence}
                   onAddBlocker={addBlocker}
                   onRemoveBlocker={removeBlocker}
+              onDuplicate={duplicateTask}
                 />
               ))}
             </ul>

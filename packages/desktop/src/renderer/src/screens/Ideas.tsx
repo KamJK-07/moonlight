@@ -196,6 +196,7 @@ export default function IdeasScreen(): React.ReactElement {
 
   const active = state.ideas.filter((idea) => !idea.archived);
   const archived = state.ideas.filter((idea) => idea.archived);
+  const uniqueTags = Array.from(new Set(active.map((i) => i.tag).filter((t): t is string => !!t))).sort();
 
   const sorted = sortIdeasByRecency(active)
     .filter((idea) => !tagQuery.trim() || (idea.tag ?? '').toLowerCase().includes(tagQuery.trim().toLowerCase()))
@@ -361,7 +362,13 @@ export default function IdeasScreen(): React.ReactElement {
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               style={{ flex: '0 1 140px' }}
+              list="idea-tag-suggestions"
             />
+            <datalist id="idea-tag-suggestions">
+              {uniqueTags.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
             <button className="btn-accent" type="submit">
               Add idea
             </button>
@@ -375,8 +382,21 @@ export default function IdeasScreen(): React.ReactElement {
           placeholder="Search by tag…"
           value={tagQuery}
           onChange={(e) => setTagQuery(e.target.value)}
-          style={{ marginBottom: '1rem' }}
+          style={{ marginBottom: uniqueTags.length > 0 ? '0.5rem' : '1rem' }}
         />
+      )}
+      {uniqueTags.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          {uniqueTags.map((t) => (
+            <button
+              key={t}
+              className={`btn-plain${tagQuery === t ? ' active' : ''}`}
+              onClick={() => setTagQuery(tagQuery === t ? '' : t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       )}
 
       {sorted.length === 0 && (

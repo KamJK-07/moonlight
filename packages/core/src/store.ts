@@ -146,6 +146,18 @@ export class WorklightStore {
     this.set({ ...this.state, tasks: this.state.tasks.filter((t) => t.id !== id) });
   }
 
+  duplicateTask(id: string): Task | null {
+    const source = this.state.tasks.find((t) => t.id === id);
+    if (!source) return null;
+    return this.addTask({
+      text: source.text,
+      projectId: source.projectId,
+      due: source.due,
+      priority: source.priority,
+      recurrence: source.recurrence,
+    });
+  }
+
   addSubtask(taskId: string, text: string): void {
     const trimmed = text.trim();
     if (!trimmed) return;

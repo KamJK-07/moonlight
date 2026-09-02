@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { groupTasks } from '@moonlight/core';
+import { groupTasks, todayKey, addDays } from '@moonlight/core';
 import type { TaskPriority, EventRecurrence } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
@@ -13,7 +13,7 @@ export default function TasksScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
-  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker } = useTaskDetails();
+  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker, duplicate: duplicateTask } = useTaskDetails();
   const [text, setText] = useState('');
   const [projectId, setProjectId] = useState('');
   const [due, setDue] = useState('');
@@ -80,6 +80,7 @@ export default function TasksScreen(): React.ReactElement {
                 onSetRecurrence={setTaskRecurrence}
                 onAddBlocker={addBlocker}
                 onRemoveBlocker={removeBlocker}
+              onDuplicate={duplicateTask}
               />
             );
           })}
@@ -116,6 +117,17 @@ export default function TasksScreen(): React.ReactElement {
               <option value="high">High</option>
             </select>
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            <div style={{ display: 'flex', gap: '0.3rem' }}>
+              <button type="button" className="btn-plain" onClick={() => setDue(todayKey())}>
+                Today
+              </button>
+              <button type="button" className="btn-plain" onClick={() => setDue(addDays(todayKey(), 1))}>
+                Tomorrow
+              </button>
+              <button type="button" className="btn-plain" onClick={() => setDue(addDays(todayKey(), 7))}>
+                +1wk
+              </button>
+            </div>
             <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as EventRecurrence)}>
               {RECURRENCE_OPTIONS.map((r) => (
                 <option key={r} value={r}>
@@ -180,6 +192,7 @@ export default function TasksScreen(): React.ReactElement {
                   onSetRecurrence={setTaskRecurrence}
                   onAddBlocker={addBlocker}
                   onRemoveBlocker={removeBlocker}
+              onDuplicate={duplicateTask}
                 />
               );
             })}

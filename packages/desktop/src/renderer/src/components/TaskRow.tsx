@@ -17,6 +17,7 @@ interface Props {
   onSetRecurrence: (taskId: string, recurrence: EventRecurrence) => void;
   onAddBlocker: (taskId: string, blockerId: string) => void;
   onRemoveBlocker: (taskId: string, blockerId: string) => void;
+  onDuplicate: (taskId: string) => void;
 }
 
 function fmtShort(dateKey: string): string {
@@ -40,6 +41,7 @@ export default function TaskRow({
   onSetRecurrence,
   onAddBlocker,
   onRemoveBlocker,
+  onDuplicate,
 }: Props): React.ReactElement {
   const today = todayKey();
   const [expanded, setExpanded] = useState(false);
@@ -167,6 +169,11 @@ export default function TaskRow({
                 ))}
               </select>
             )}
+          </div>
+          <div className="task-detail-row">
+            <button className="btn-plain" onClick={() => onDuplicate(task.id)}>
+              Duplicate task
+            </button>
           </div>
         </li>
       )}
