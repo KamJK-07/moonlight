@@ -168,8 +168,8 @@ export default function CalendarScreen(): React.ReactElement {
   const selectedTasks = tasksByDueDate[selected] ?? [];
 
   return (
-    <div>
-      <div className="card">
+    <div className="cal-layout">
+      <div className="card cal-main">
         <div className="cal-view-toggle">
           <button className={`btn-plain${view === 'month' ? ' active' : ''}`} onClick={() => setView('month')}>
             Month
@@ -204,7 +204,7 @@ export default function CalendarScreen(): React.ReactElement {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card cal-side">
         <div className="group-label" style={{ marginTop: 0 }}>
           {fmtLong(selected)}
         </div>

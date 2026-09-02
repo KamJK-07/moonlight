@@ -116,8 +116,8 @@ export default function IdeasScreen(): React.ReactElement {
 
   function renderIdea(idea: Idea) {
     return (
-      <div key={idea.id} className="card">
-        <div className="row" style={{ border: 'none', padding: 0 }}>
+      <div key={idea.id} className="card idea-card">
+        <div className="idea-card-text">
           <button
             className="btn-plain"
             onClick={() => store.toggleIdeaStar(idea.id)}
@@ -127,6 +127,8 @@ export default function IdeasScreen(): React.ReactElement {
             {idea.starred ? '★' : '☆'}
           </button>
           <span className="row-text">{idea.text}</span>
+        </div>
+        <div className="idea-card-actions">
           {idea.tag && <span className="tag">{idea.tag}</span>}
           <button className="btn-plain" onClick={() => store.setIdeaArchived(idea.id, true)} aria-label="Archive idea">
             Archive
@@ -135,7 +137,7 @@ export default function IdeasScreen(): React.ReactElement {
             ×
           </button>
         </div>
-        <div style={{ display: 'flex', gap: '0.6rem', margin: '0.4rem 0' }}>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
           <button className="btn-plain" onClick={() => convertToTask(idea)}>
             → Task
           </button>
@@ -146,7 +148,6 @@ export default function IdeasScreen(): React.ReactElement {
         <select
           value={idea.status}
           onChange={(e) => store.setIdeaStatus(idea.id, e.target.value as IdeaStatus)}
-          style={{ marginTop: '0.5rem' }}
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -160,13 +161,13 @@ export default function IdeasScreen(): React.ReactElement {
           onRemove={(url) => store.removeIdeaLink(idea.id, url)}
         />
         {idea.riff && (
-          <div className="idea-riff" style={{ marginTop: '0.5rem' }}>
+          <div className="idea-riff">
             <span className="l">Claude riffed</span>
             {idea.riff}
           </div>
         )}
         {riffing === idea.id ? null : hasKey ? (
-          <div style={{ marginTop: '0.5rem' }}>
+          <div>
             <button className="btn-plain" onClick={() => riff(idea.id)}>
               {idea.riff ? 'Riff again' : 'Ask Claude to riff'}
             </button>
@@ -178,7 +179,7 @@ export default function IdeasScreen(): React.ReactElement {
           </div>
         ) : null}
         {riffing === idea.id && (
-          <div style={{ marginTop: '0.5rem' }}>
+          <div>
             <button className="btn-plain" disabled>
               Thinking…
             </button>

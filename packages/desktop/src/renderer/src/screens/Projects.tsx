@@ -1,8 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { projectProgress, PROJECT_COLORS } from '@moonlight/core';
 import type { ProjectStatus } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
+
+function ProjectNotes({ notes, onSave }: { notes: string; onSave: (value: string) => void }): React.ReactElement {
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing) ref.current?.focus();
+  }, [editing]);
+
+  if (!editing) {
+    return (
+      <div
+        className="project-notes-preview"
+        onClick={() => setEditing(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
+      >
+        {notes.trim() ? notes : <span className="ph">Notes…</span>}
+      </div>
+    );
+  }
+
+  return (
+    <textarea
+      ref={ref}
+      className="project-notes"
+      defaultValue={notes}
+      placeholder="Notes…"
+      onBlur={(e) => {
+        if (e.target.value !== notes) onSave(e.target.value);
+        setEditing(false);
+      }}
+    />
+  );
+}
 
 export default function ProjectsScreen({
   onSelectProject,
@@ -169,14 +205,7 @@ export default function ProjectsScreen({
               ) : (
                 <div className="progress-label">No tasks linked yet</div>
               )}
-              <textarea
-                className="project-notes"
-                defaultValue={p.notes}
-                placeholder="Notes…"
-                onBlur={(e) => {
-                  if (e.target.value !== p.notes) store.updateProject(p.id, { notes: e.target.value });
-                }}
-              />
+              <ProjectNotes notes={p.notes} onSave={(value) => store.updateProject(p.id, { notes: value })} />
             </div>
           );
         })}

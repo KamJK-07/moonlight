@@ -46,7 +46,7 @@ function Shell(): React.ReactElement {
   const [view, setView] = useState<ViewId>('today');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const { status: githubStatus, client: githubClient } = useGithub();
+  const { status: githubStatus, client: githubClient, login: githubLogin } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   useReminderPoller();
 
@@ -115,6 +115,14 @@ function Shell(): React.ReactElement {
           ))}
         </nav>
         <div className="sidebar-foot">
+          <button
+            className="account-button"
+            onClick={() => setView('github')}
+            title={githubStatus === 'connected' ? `Connected as ${githubLogin}` : 'Connect GitHub'}
+          >
+            <span className={`gh-dot${githubStatus === 'connected' ? ' connected' : ''}`} />
+            <span className="account-label">{githubStatus === 'connected' ? githubLogin : 'Account'}</span>
+          </button>
           <button className="settings-gear" onClick={() => setShowSettings(true)} aria-label="Settings" title="Settings">
             ⚙
           </button>
