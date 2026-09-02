@@ -232,7 +232,9 @@ void app.whenReady().then(async () => {
     }
     try {
       const data = await fs.readFile(join(imagesDir(), filename));
-      return new Response(data);
+      const ext = extname(filename).slice(1).toLowerCase();
+      const contentType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+      return new Response(data, { headers: { 'Content-Type': contentType } });
     } catch {
       return new Response('Not found', { status: 404 });
     }

@@ -69,6 +69,8 @@ function IdeaImages({
   onAdd: (filename: string) => void;
   onRemove: (filename: string) => void;
 }): React.ReactElement {
+  const [preview, setPreview] = useState<string | null>(null);
+
   async function attach(): Promise<void> {
     const filename = await window.moonlight.addIdeaImage();
     if (filename) onAdd(filename);
@@ -84,9 +86,16 @@ function IdeaImages({
       {images.length > 0 && (
         <div className="idea-image-grid">
           {images.map((filename) => (
-            <div key={filename} className="idea-image-thumb">
+            <div key={filename} className="idea-image-thumb" onClick={() => setPreview(filename)}>
               <img src={`moonlight-image://${filename}`} alt="" />
-              <button className="btn-plain idea-image-remove" onClick={() => remove(filename)} aria-label="Remove image">
+              <button
+                className="btn-plain idea-image-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(filename);
+                }}
+                aria-label="Remove image"
+              >
                 ×
               </button>
             </div>
@@ -96,6 +105,14 @@ function IdeaImages({
       <button className="btn-plain" onClick={() => void attach()}>
         + Attach image
       </button>
+      {preview && (
+        <div className="image-preview-backdrop" onClick={() => setPreview(null)}>
+          <img src={`moonlight-image://${preview}`} alt="" className="image-preview-full" />
+          <button className="btn-plain image-preview-close" onClick={() => setPreview(null)} aria-label="Close preview">
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
