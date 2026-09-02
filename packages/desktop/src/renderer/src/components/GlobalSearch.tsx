@@ -33,6 +33,7 @@ export default function GlobalSearch({
   onOpenMap,
   onOpenAccount,
   onQuickAdd,
+  onOpenShortcuts,
 }: {
   onClose: () => void;
   onOpenProject: (id: string) => void;
@@ -41,6 +42,7 @@ export default function GlobalSearch({
   onOpenMap: () => void;
   onOpenAccount: () => void;
   onQuickAdd: () => void;
+  onOpenShortcuts: () => void;
 }): React.ReactElement {
   const { state, store } = useWorklight();
   const [query, setQuery] = useState('');
@@ -61,6 +63,7 @@ export default function GlobalSearch({
       { id: 'settings', label: 'Open Settings', run: onOpenSettings },
       { id: 'map', label: 'Open project map', run: onOpenMap },
       { id: 'account', label: 'Open Account / GitHub', run: onOpenAccount },
+      { id: 'shortcuts', label: 'Keyboard shortcuts', run: onOpenShortcuts },
     ];
     for (const a of actions) {
       if (!q || a.label.toLowerCase().includes(q)) {
@@ -103,7 +106,7 @@ export default function GlobalSearch({
       }
     }
     return out;
-  }, [query, state, store, onQuickAdd, onOpenSettings, onOpenMap, onOpenAccount]);
+  }, [query, state, store, onQuickAdd, onOpenSettings, onOpenMap, onOpenAccount, onOpenShortcuts]);
 
   useEffect(() => {
     setActiveIndex(0);

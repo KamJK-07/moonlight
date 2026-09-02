@@ -203,11 +203,22 @@ export class WorklightStore {
       color: null,
       githubRepo: null,
       archived: false,
+      pinned: false,
       createdAt: now,
       updatedAt: now,
     };
     this.set({ ...this.state, projects: [...this.state.projects, project] });
     return project;
+  }
+
+  togglePinProject(id: string, pinned?: boolean): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      projects: this.state.projects.map((p) =>
+        p.id === id ? { ...p, pinned: pinned ?? !p.pinned, updatedAt: now } : p,
+      ),
+    });
   }
 
   updateProject(id: string, patch: Partial<Omit<Project, 'id' | 'createdAt'>>): void {
@@ -218,6 +229,19 @@ export class WorklightStore {
         p.id === id ? { ...p, ...patch, updatedAt: now } : p,
       ),
     });
+  }
+
+  /** Clones a project's name/status/notes/color/repo and its task titles into a brand-new project. */
+  duplicateProject(id: string): Project | null {
+    const source = this.state.projects.find((p) => p.id === id);
+    if (!source) return null;
+    const sourceTasks = this.state.tasks.filter((t) => t.projectId === id);
+    const project = this.addProject({ name: `${source.name} (copy)`, status: source.status });
+    this.updateProject(project.id, { notes: source.notes, color: source.color, githubRepo: source.githubRepo });
+    for (const t of sourceTasks) {
+      this.addTask({ text: t.text, priority: t.priority, recurrence: t.recurrence, due: t.due });
+    }
+    return project;
   }
 
   deleteProject(id: string): void {

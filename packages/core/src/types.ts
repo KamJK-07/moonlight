@@ -73,6 +73,8 @@ export interface Project {
   /** "owner/repo" — the GitHub repo this project is linked to, if any. */
   githubRepo: string | null;
   archived: boolean;
+  /** Pinned projects surface in a dedicated card on the Today screen. */
+  pinned: boolean;
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }

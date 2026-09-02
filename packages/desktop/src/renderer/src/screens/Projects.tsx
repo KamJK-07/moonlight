@@ -158,7 +158,16 @@ export default function ProjectsScreen({
           return (
             <div key={p.id} className="project-card">
               <div className="project-card-head">
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                  <button
+                    className="btn-plain"
+                    onClick={() => store.togglePinProject(p.id)}
+                    aria-label={p.pinned ? 'Unpin project' : 'Pin project'}
+                    title={p.pinned ? 'Unpin from Today' : 'Pin to Today'}
+                    style={{ padding: '0.1rem 0.25rem', color: p.pinned ? 'var(--accent)' : 'var(--ink-faint)', flexShrink: 0 }}
+                  >
+                    {p.pinned ? '★' : '☆'}
+                  </button>
                   {p.color && (
                     <span
                       style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: p.color, flexShrink: 0 }}
@@ -194,6 +203,9 @@ export default function ProjectsScreen({
                 </div>
               </div>
               <div className="project-card-secondary">
+                <button className="btn-plain" onClick={() => store.duplicateProject(p.id)} title="Clone this project's tasks into a new project">
+                  Duplicate
+                </button>
                 <button className="btn-plain" onClick={() => beginSaveAsTemplate(p)} title="Save this project's task checklist as a reusable template">
                   Template
                 </button>

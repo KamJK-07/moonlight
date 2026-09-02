@@ -15,6 +15,7 @@ import SettingsScreen from './screens/Settings';
 import MapView from './screens/MapView';
 import QuickAdd from './components/QuickAdd';
 import GlobalSearch from './components/GlobalSearch';
+import ShortcutsHelp from './components/ShortcutsHelp';
 
 export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas';
 
@@ -50,6 +51,7 @@ function Shell(): React.ReactElement {
   const [showAccount, setShowAccount] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const { status: githubStatus, client: githubClient, login: githubLogin } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   useReminderPoller();
@@ -70,8 +72,18 @@ function Shell(): React.ReactElement {
         setShowSearch(false);
       }
     }
+    function onShortcutHelpKey(e: KeyboardEvent) {
+      if (e.key !== '?') return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      setShowShortcuts(true);
+    }
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onShortcutHelpKey);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onShortcutHelpKey);
+    };
   }, []);
 
   function openProject(id: string): void {
@@ -225,8 +237,13 @@ function Shell(): React.ReactElement {
             setShowSearch(false);
             window.dispatchEvent(new Event('moonlight:quick-add'));
           }}
+          onOpenShortcuts={() => {
+            setShowSearch(false);
+            setShowShortcuts(true);
+          }}
         />
       )}
+      {showShortcuts && <ShortcutsHelp onClose={() => setShowShortcuts(false)} />}
     </div>
   );
 }

@@ -84,6 +84,7 @@ export function createInitialState(): WorklightState {
         color: null,
         githubRepo: null,
         archived: false,
+        pinned: false,
         createdAt: now,
         updatedAt: now,
       },

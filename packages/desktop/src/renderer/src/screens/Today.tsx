@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { onDeck, computeStreak, activeProjectCount, todayKey, eventsForDate } from '@moonlight/core';
+import { onDeck, computeStreak, activeProjectCount, todayKey, eventsForDate, projectProgress } from '@moonlight/core';
 import type { GithubActivityItem } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
@@ -8,7 +8,7 @@ import { useTaskDetails } from '../store/useTaskDetails';
 import TaskRow from '../components/TaskRow';
 import type { ViewId } from '../App';
 
-export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (v: ViewId) => void }): React.ReactElement {
+export default function TodayScreen({ onNavigate }: { onNavigate: (v: ViewId) => void }): React.ReactElement {
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
@@ -17,6 +17,7 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
 
   const today = todayKey();
+  const pinnedProjects = state.projects.filter((p) => p.pinned && !p.archived);
   const deck = onDeck(state.tasks, today);
   const streak = computeStreak(state.logEntries, today);
   const todaysEvents = eventsForDate(state.events, today);
@@ -77,6 +78,34 @@ export default function TodayScreen({ onNavigate: _onNavigate }: { onNavigate: (
           <div className="l">Day streak</div>
         </div>
       </div>
+
+      {pinnedProjects.length > 0 && (
+        <div className="card">
+          <h3>Pinned projects</h3>
+          <ul className="list">
+            {pinnedProjects.map((p) => {
+              const progress = projectProgress(state.tasks, p);
+              return (
+                <li key={p.id} className="row">
+                  {p.color && (
+                    <span style={{ width: '0.6rem', height: '0.6rem', borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+                  )}
+                  <button
+                    className="row-text"
+                    style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer' }}
+                    onClick={() => onNavigate('projects')}
+                  >
+                    {p.name}
+                  </button>
+                  <span className="tag mono">
+                    {progress.done}/{progress.total} · {progress.pct}%
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="card">
         <h3>On deck</h3>

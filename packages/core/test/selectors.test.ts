@@ -97,6 +97,7 @@ describe('projectProgress', () => {
     color: null,
     githubRepo: null,
     archived: false,
+    pinned: false,
     createdAt: '2026-08-30T00:00:00.000Z',
     updatedAt: '2026-08-30T00:00:00.000Z',
   };
@@ -150,6 +151,7 @@ describe('activeProjectCount', () => {
     color: null,
     githubRepo: null,
     archived: false,
+    pinned: false,
     createdAt: '2026-08-30T00:00:00.000Z',
     updatedAt: '2026-08-30T00:00:00.000Z',
   };
@@ -207,6 +209,7 @@ describe('projectToMarkdown', () => {
     color: null,
     githubRepo: 'kamjk/moonlight',
     archived: false,
+    pinned: false,
     createdAt: '2026-08-30T00:00:00.000Z',
     updatedAt: '2026-08-30T00:00:00.000Z',
   };
