@@ -4,6 +4,7 @@ import type { GithubActivityItem, Task } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 import { useTaskGithubSync } from '../store/useTaskGithubSync';
+import { useTaskDetails } from '../store/useTaskDetails';
 import TaskRow from '../components/TaskRow';
 
 function fmtShort(dateKey: string): string {
@@ -21,20 +22,11 @@ export default function ProjectDetail({
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
+  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker } = useTaskDetails();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   const [openPrs, setOpenPrs] = useState<GithubActivityItem[] | null>(null);
 
   const project = state.projects.find((p) => p.id === projectId);
-
-  function addBlocker(taskId: string, blockerId: string): void {
-    const task = state.tasks.find((t) => t.id === taskId);
-    if (task) store.updateTask(taskId, { blockedBy: [...(task.blockedBy ?? []), blockerId] });
-  }
-
-  function removeBlocker(taskId: string, blockerId: string): void {
-    const task = state.tasks.find((t) => t.id === taskId);
-    if (task) store.updateTask(taskId, { blockedBy: (task.blockedBy ?? []).filter((id) => id !== blockerId) });
-  }
 
   useEffect(() => {
     if (githubStatus === 'connected' && githubClient && project?.githubRepo) {
@@ -79,7 +71,7 @@ export default function ProjectDetail({
               onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
               onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
               onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
-              onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+              onSetRecurrence={setTaskRecurrence}
               onAddBlocker={addBlocker}
               onRemoveBlocker={removeBlocker}
             />
@@ -190,7 +182,7 @@ export default function ProjectDetail({
                   onAddSubtask={(taskId, subtaskText) => store.addSubtask(taskId, subtaskText)}
                   onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
                   onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
-                  onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+                  onSetRecurrence={setTaskRecurrence}
                   onAddBlocker={addBlocker}
                   onRemoveBlocker={removeBlocker}
                 />

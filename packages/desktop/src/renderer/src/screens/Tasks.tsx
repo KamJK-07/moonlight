@@ -4,6 +4,7 @@ import type { TaskPriority, EventRecurrence } from '@moonlight/core';
 import { useWorklight } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
 import { useTaskGithubSync } from '../store/useTaskGithubSync';
+import { useTaskDetails } from '../store/useTaskDetails';
 import TaskRow from '../components/TaskRow';
 
 const RECURRENCE_OPTIONS: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
@@ -12,6 +13,7 @@ export default function TasksScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const { status: githubStatus, client: githubClient } = useGithub();
   const { toggleTaskWithSync } = useTaskGithubSync();
+  const { setRecurrence: setTaskRecurrence, addBlocker, removeBlocker } = useTaskDetails();
   const [text, setText] = useState('');
   const [projectId, setProjectId] = useState('');
   const [due, setDue] = useState('');
@@ -32,18 +34,6 @@ export default function TasksScreen(): React.ReactElement {
     setDue('');
     setPriority('medium');
     setRecurrence('none');
-  }
-
-  function addBlocker(taskId: string, blockerId: string) {
-    const task = state.tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    store.updateTask(taskId, { blockedBy: [...(task.blockedBy ?? []), blockerId] });
-  }
-
-  function removeBlocker(taskId: string, blockerId: string) {
-    const task = state.tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    store.updateTask(taskId, { blockedBy: (task.blockedBy ?? []).filter((id) => id !== blockerId) });
   }
 
   const filteredTasks = state.tasks.filter((t) => {
@@ -87,7 +77,7 @@ export default function TasksScreen(): React.ReactElement {
                 onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
                 onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
                 onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
-                onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+                onSetRecurrence={setTaskRecurrence}
                 onAddBlocker={addBlocker}
                 onRemoveBlocker={removeBlocker}
               />
@@ -187,7 +177,7 @@ export default function TasksScreen(): React.ReactElement {
                   onToggleSubtask={(taskId, subtaskId, done) => store.toggleSubtask(taskId, subtaskId, done)}
                   onDeleteSubtask={(taskId, subtaskId) => store.deleteSubtask(taskId, subtaskId)}
                   onCreateIssue={proj?.githubRepo && githubStatus === 'connected' ? createIssueForTask : undefined}
-                  onSetRecurrence={(taskId, r) => store.updateTask(taskId, { recurrence: r })}
+                  onSetRecurrence={setTaskRecurrence}
                   onAddBlocker={addBlocker}
                   onRemoveBlocker={removeBlocker}
                 />
