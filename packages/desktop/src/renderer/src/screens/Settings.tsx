@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { serializeState, deserializeState, InvalidStateError, planSync } from '@moonlight/core';
+import { serializeState, deserializeState, InvalidStateError, planSync, summarizeSyncDiff } from '@moonlight/core';
 import type { ThemeMode, AccentTheme, TextScale, WorklightState } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
@@ -124,16 +124,21 @@ export default function SettingsScreen(): React.ReactElement {
         return;
       }
       if (action === 'push') {
-        const confirmed = window.confirm(
-          `This will push your local data to ${repo}, overwriting what's stored there. Continue?`,
-        );
+        const diff = remoteState ? summarizeSyncDiff(remoteState, state) : null;
+        const message = diff
+          ? `This will push your local data to ${repo}, overwriting what's stored there:\n\n${diff.map((l) => `• ${l}`).join('\n')}\n\nContinue?`
+          : `This will push your local data to ${repo}, overwriting what's stored there. Continue?`;
+        const confirmed = window.confirm(message);
         if (!confirmed) return;
         await githubClient.putFileContent(repo, SYNC_PATH, serializeState(state), remoteFile?.sha, 'Sync from Moonlight');
         setSyncStatus('Pushed local data.');
         return;
       }
       if (action === 'pull' && remoteState) {
-        const confirmed = window.confirm('Remote data is newer. Pull it? This replaces everything on this device.');
+        const diff = summarizeSyncDiff(state, remoteState);
+        const confirmed = window.confirm(
+          `Remote data is newer. Pull it? This replaces everything on this device:\n\n${diff.map((l) => `• ${l}`).join('\n')}\n\nContinue?`,
+        );
         if (!confirmed) return;
         store.replaceState(remoteState);
         setSyncStatus('Pulled remote data.');

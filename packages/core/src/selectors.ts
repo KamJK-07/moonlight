@@ -134,3 +134,34 @@ export function projectToMarkdown(project: Project, tasks: Task[], logEntries: L
 
   return lines.join('\n').trimEnd() + '\n';
 }
+
+export interface WeeklyTaskCount {
+  weekStart: DateKey;
+  count: number;
+}
+
+/**
+ * Tasks marked done, bucketed by the Monday-start week they were completed
+ * in (by `updatedAt`, since that's when `done` last flipped). Always
+ * returns exactly `weeks` buckets, oldest first, ending with the current
+ * week — including zero-count weeks, so a chart renders a flat baseline
+ * instead of gaps.
+ */
+export function tasksCompletedByWeek(
+  tasks: Task[],
+  weeks: number = 8,
+  today: DateKey = todayKey(),
+): WeeklyTaskCount[] {
+  const thisWeekStart = startOfWeek(today);
+  const buckets: WeeklyTaskCount[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    buckets.push({ weekStart: addDays(thisWeekStart, -7 * i), count: 0 });
+  }
+  const byWeekStart = new Map(buckets.map((b) => [b.weekStart, b]));
+  for (const t of tasks) {
+    if (!t.done) continue;
+    const bucket = byWeekStart.get(startOfWeek(t.updatedAt.slice(0, 10)));
+    if (bucket) bucket.count += 1;
+  }
+  return buckets;
+}

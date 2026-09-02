@@ -1,5 +1,5 @@
-import { latestUpdatedAt, planSync } from '../src/sync';
-import type { WorklightState, Task, Settings } from '../src/types';
+import { latestUpdatedAt, planSync, summarizeSyncDiff } from '../src/sync';
+import type { WorklightState, Task, Project, Settings } from '../src/types';
 
 function makeSettings(overrides: Partial<Settings> = {}): Settings {
   return {
@@ -29,6 +29,21 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     subtasks: [],
     recurrence: 'none',
     blockedBy: [],
+    createdAt: '2026-08-30T00:00:00.000Z',
+    updatedAt: '2026-08-30T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: overrides.id ?? 'project-1',
+    name: 'test project',
+    status: 'active',
+    notes: '',
+    color: null,
+    githubRepo: null,
+    archived: false,
     createdAt: '2026-08-30T00:00:00.000Z',
     updatedAt: '2026-08-30T00:00:00.000Z',
     ...overrides,
@@ -140,5 +155,60 @@ describe('planSync', () => {
   it('does not throw when comparing two empty states', () => {
     expect(() => planSync(makeState(), makeState())).not.toThrow();
     expect(planSync(makeState(), makeState())).toBe('noop');
+  });
+});
+
+describe('summarizeSyncDiff', () => {
+  it('reports no changes for two identical states', () => {
+    const state = makeState({ tasks: [makeTask()] });
+    expect(summarizeSyncDiff(state, state)).toEqual([
+      'No changes to tasks, projects, ideas, log entries, or events.',
+    ]);
+  });
+
+  it('counts added, removed, renamed, and completion changes for tasks', () => {
+    const from = makeState({
+      tasks: [
+        makeTask({ id: 't1', text: 'Write docs' }),
+        makeTask({ id: 't2', text: 'Fix bug', done: false }),
+        makeTask({ id: 't3', text: 'Old task' }),
+      ],
+    });
+    const to = makeState({
+      tasks: [
+        makeTask({ id: 't1', text: 'Write great docs' }),
+        makeTask({ id: 't2', text: 'Fix bug', done: true }),
+        makeTask({ id: 't4', text: 'New task' }),
+      ],
+    });
+    const diff = summarizeSyncDiff(from, to);
+    expect(diff).toContain('1 task added');
+    expect(diff).toContain('1 task removed');
+    expect(diff).toContain('1 task renamed');
+    expect(diff).toContain('1 task completed or reopened');
+  });
+
+  it('pluralizes correctly and detects a project rename', () => {
+    const from = makeState({ projects: [makeProject({ id: 'p1', name: 'Old name' })] });
+    const to = makeState({
+      projects: [
+        makeProject({ id: 'p1', name: 'New name' }),
+        makeProject({ id: 'p2', name: 'Second project' }),
+      ],
+    });
+    const diff = summarizeSyncDiff(from, to);
+    expect(diff).toContain('1 project added');
+    expect(diff).toContain('1 project renamed');
+  });
+
+  it('uses correct English pluralization for log entries', () => {
+    const from = makeState();
+    const to = makeState({
+      logEntries: [
+        { id: 'l1', date: '2026-08-30', text: 'a', projectId: null, source: 'manual', createdAt: '2026-08-30T00:00:00.000Z' },
+        { id: 'l2', date: '2026-08-31', text: 'b', projectId: null, source: 'manual', createdAt: '2026-08-31T00:00:00.000Z' },
+      ],
+    });
+    expect(summarizeSyncDiff(from, to)).toContain('2 log entries added');
   });
 });

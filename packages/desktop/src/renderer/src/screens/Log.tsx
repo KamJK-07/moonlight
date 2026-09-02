@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { groupLogEntriesByWeek, startOfWeek, todayKey, addDays } from '@moonlight/core';
+import { groupLogEntriesByWeek, startOfWeek, todayKey, addDays, tasksCompletedByWeek } from '@moonlight/core';
 import type { DateKey } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
 
@@ -71,6 +71,8 @@ export default function LogScreen(): React.ReactElement {
   }
 
   const weekGroups = groupLogEntriesByWeek(state.logEntries);
+  const weeklyTaskCounts = tasksCompletedByWeek(state.tasks, 8);
+  const maxWeeklyCount = Math.max(1, ...weeklyTaskCounts.map((w) => w.count));
 
   return (
     <div>
@@ -99,6 +101,22 @@ export default function LogScreen(): React.ReactElement {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="card">
+        <h3>Tasks completed per week</h3>
+        <div className="chart-bars">
+          {weeklyTaskCounts.map((w) => (
+            <div key={w.weekStart} className="chart-bar-col">
+              <div
+                className="chart-bar"
+                style={{ height: `${(w.count / maxWeeklyCount) * 100}%` }}
+                title={`Week of ${fmtShort(w.weekStart)}: ${w.count} completed`}
+              />
+              <span className="chart-bar-label">{fmtShort(w.weekStart)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {hasKey === false && (

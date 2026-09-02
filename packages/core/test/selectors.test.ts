@@ -6,6 +6,7 @@ import {
   activeProjectCount,
   groupLogEntriesByWeek,
   projectToMarkdown,
+  tasksCompletedByWeek,
 } from '../src/selectors';
 import type { Task, Project, LogEntry } from '../src/types';
 
@@ -238,5 +239,36 @@ describe('projectToMarkdown', () => {
     expect(md).not.toContain('## Notes');
     expect(md).not.toContain('## Tasks');
     expect(md).not.toContain('## Progress log');
+  });
+});
+
+describe('tasksCompletedByWeek', () => {
+  const today = '2026-09-02'; // Wednesday; that week starts Monday 2026-08-31
+
+  it('returns exactly `weeks` buckets ending with the current week, oldest first', () => {
+    const buckets = tasksCompletedByWeek([], 4, today);
+    expect(buckets.map((b) => b.weekStart)).toEqual(['2026-08-10', '2026-08-17', '2026-08-24', '2026-08-31']);
+    expect(buckets.every((b) => b.count === 0)).toBe(true);
+  });
+
+  it('counts only done tasks, bucketed by the week updatedAt falls in', () => {
+    const tasks = [
+      makeTask({ id: 't1', done: true, updatedAt: '2026-08-31T10:00:00.000Z' }), // this week
+      makeTask({ id: 't2', done: true, updatedAt: '2026-09-01T10:00:00.000Z' }), // this week
+      makeTask({ id: 't3', done: true, updatedAt: '2026-08-24T10:00:00.000Z' }), // last week
+      makeTask({ id: 't4', done: false, updatedAt: '2026-08-31T10:00:00.000Z' }), // not done — excluded
+    ];
+    const buckets = tasksCompletedByWeek(tasks, 3, today);
+    expect(buckets).toEqual([
+      { weekStart: '2026-08-17', count: 0 },
+      { weekStart: '2026-08-24', count: 1 },
+      { weekStart: '2026-08-31', count: 2 },
+    ]);
+  });
+
+  it('ignores completions that fall outside the requested window', () => {
+    const tasks = [makeTask({ id: 'old', done: true, updatedAt: '2026-01-01T00:00:00.000Z' })];
+    const buckets = tasksCompletedByWeek(tasks, 2, today);
+    expect(buckets.reduce((sum, b) => sum + b.count, 0)).toBe(0);
   });
 });
