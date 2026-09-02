@@ -14,6 +14,7 @@ import GithubScreen from './screens/GithubScreen';
 import SettingsScreen from './screens/Settings';
 import MapView from './screens/MapView';
 import QuickAdd from './components/QuickAdd';
+import GlobalSearch from './components/GlobalSearch';
 
 export type ViewId = 'today' | 'calendar' | 'tasks' | 'projects' | 'log' | 'ideas';
 
@@ -48,9 +49,34 @@ function Shell(): React.ReactElement {
   const [showSettings, setShowSettings] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { status: githubStatus, client: githubClient, login: githubLogin } = useGithub();
   const [githubActivity, setGithubActivity] = useState<GithubActivityItem[] | null>(null);
   useReminderPoller();
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  function openProject(id: string): void {
+    setView('projects');
+    setSelectedProjectId(id);
+    setShowMap(false);
+    setShowSearch(false);
+  }
+
+  function goTo(v: ViewId): void {
+    setView(v);
+    setShowMap(false);
+    setShowSearch(false);
+  }
 
   useEffect(() => {
     document.body.dataset.accent = state.settings.accent;
@@ -90,6 +116,14 @@ function Shell(): React.ReactElement {
         <div className="brand">
           <span className="brand-mark" />
           <h1>Moonlight</h1>
+          <button
+            className="map-button"
+            onClick={() => setShowSearch(true)}
+            aria-label="Search"
+            title="Search (Ctrl/Cmd+S)"
+          >
+            🔍
+          </button>
           <button className="map-button" onClick={() => setShowMap(true)} aria-label="Open project map" title="Project map">
             🗺
           </button>
@@ -159,18 +193,10 @@ function Shell(): React.ReactElement {
         </div>
       )}
       {showMap && (
-        <MapView
-          onClose={() => setShowMap(false)}
-          onOpenProject={(id) => {
-            setView('projects');
-            setSelectedProjectId(id);
-            setShowMap(false);
-          }}
-          onOpenTasks={() => {
-            setView('tasks');
-            setShowMap(false);
-          }}
-        />
+        <MapView onClose={() => setShowMap(false)} onOpenProject={openProject} onOpenTasks={() => goTo('tasks')} />
+      )}
+      {showSearch && (
+        <GlobalSearch onClose={() => setShowSearch(false)} onOpenProject={openProject} onGoTo={goTo} />
       )}
     </div>
   );

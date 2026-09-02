@@ -100,6 +100,13 @@ export interface Idea {
   status: IdeaStatus;
   riff: string | null;
   links: string[];
+  /**
+   * Opaque local image identifiers (filenames on desktop) — never a raw
+   * filesystem path. Each platform resolves these to actual image bytes
+   * through its own storage layer; this field only exists to keep the
+   * ordered list of attachments per idea.
+   */
+  images: string[];
   starred: boolean;
   archived: boolean;
   createdAt: ISODateTime;

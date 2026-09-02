@@ -60,6 +60,46 @@ function IdeaLinks({
   );
 }
 
+function IdeaImages({
+  images,
+  onAdd,
+  onRemove,
+}: {
+  images: string[];
+  onAdd: (filename: string) => void;
+  onRemove: (filename: string) => void;
+}): React.ReactElement {
+  async function attach(): Promise<void> {
+    const filename = await window.moonlight.addIdeaImage();
+    if (filename) onAdd(filename);
+  }
+
+  function remove(filename: string): void {
+    void window.moonlight.removeIdeaImage(filename);
+    onRemove(filename);
+  }
+
+  return (
+    <div className="idea-images">
+      {images.length > 0 && (
+        <div className="idea-image-grid">
+          {images.map((filename) => (
+            <div key={filename} className="idea-image-thumb">
+              <img src={`moonlight-image://${filename}`} alt="" />
+              <button className="btn-plain idea-image-remove" onClick={() => remove(filename)} aria-label="Remove image">
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button className="btn-plain" onClick={() => void attach()}>
+        + Attach image
+      </button>
+    </div>
+  );
+}
+
 export default function IdeasScreen(): React.ReactElement {
   const { state, store } = useWorklight();
   const anthropic = useAnthropicSecrets();
@@ -114,6 +154,11 @@ export default function IdeasScreen(): React.ReactElement {
     store.setIdeaStatus(idea.id, 'shipped');
   }
 
+  function deleteIdeaAndImages(idea: Idea) {
+    for (const filename of idea.images ?? []) void window.moonlight.removeIdeaImage(filename);
+    store.deleteIdea(idea.id);
+  }
+
   function renderIdea(idea: Idea) {
     return (
       <div key={idea.id} className="card idea-card">
@@ -133,7 +178,7 @@ export default function IdeasScreen(): React.ReactElement {
           <button className="btn-plain" onClick={() => store.setIdeaArchived(idea.id, true)} aria-label="Archive idea">
             Archive
           </button>
-          <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
+          <button className="btn-plain" onClick={() => deleteIdeaAndImages(idea)} aria-label="Delete idea">
             ×
           </button>
         </div>
@@ -159,6 +204,11 @@ export default function IdeasScreen(): React.ReactElement {
           links={idea.links ?? []}
           onAdd={(url) => store.addIdeaLink(idea.id, url)}
           onRemove={(url) => store.removeIdeaLink(idea.id, url)}
+        />
+        <IdeaImages
+          images={idea.images ?? []}
+          onAdd={(filename) => store.addIdeaImage(idea.id, filename)}
+          onRemove={(filename) => store.removeIdeaImage(idea.id, filename)}
         />
         {idea.riff && (
           <div className="idea-riff">
@@ -264,7 +314,7 @@ export default function IdeasScreen(): React.ReactElement {
                 <button className="btn-plain" onClick={() => store.setIdeaArchived(idea.id, false)}>
                   Restore
                 </button>
-                <button className="btn-plain" onClick={() => store.deleteIdea(idea.id)} aria-label="Delete idea">
+                <button className="btn-plain" onClick={() => deleteIdeaAndImages(idea)} aria-label="Delete idea">
                   ×
                 </button>
               </li>

@@ -280,6 +280,7 @@ export class WorklightStore {
       status: 'raw',
       riff: null,
       links: [],
+      images: [],
       starred: false,
       archived: false,
       createdAt: now,
@@ -337,6 +338,28 @@ export class WorklightStore {
         const idx = links.indexOf(url);
         if (idx !== -1) links.splice(idx, 1);
         return { ...i, links, updatedAt: now };
+      }),
+    });
+  }
+
+  addIdeaImage(id: string, filename: string): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) =>
+        i.id === id ? { ...i, images: [...(i.images ?? []), filename], updatedAt: now } : i,
+      ),
+    });
+  }
+
+  removeIdeaImage(id: string, filename: string): void {
+    const now = new Date().toISOString();
+    this.set({
+      ...this.state,
+      ideas: this.state.ideas.map((i) => {
+        if (i.id !== id) return i;
+        const images = (i.images ?? []).filter((f) => f !== filename);
+        return { ...i, images, updatedAt: now };
       }),
     });
   }

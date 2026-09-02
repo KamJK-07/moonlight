@@ -76,6 +76,7 @@ describe('latestUpdatedAt', () => {
           status: 'raw',
           riff: null,
           links: [],
+          images: [],
           starred: false,
           archived: false,
           createdAt: '2026-08-01T00:00:00.000Z',

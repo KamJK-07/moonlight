@@ -105,6 +105,7 @@ export function createInitialState(): WorklightState {
         status: 'raw',
         riff: null,
         links: [],
+        images: [],
         starred: false,
         archived: false,
         createdAt: now,

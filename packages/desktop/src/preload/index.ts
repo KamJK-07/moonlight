@@ -28,6 +28,9 @@ const moonlightBridge = {
     ipcRenderer.invoke('data:export', json),
   importData: (): Promise<{ loaded: boolean; json?: string }> => ipcRenderer.invoke('data:import'),
 
+  addIdeaImage: (): Promise<string | null> => ipcRenderer.invoke('idea-image:add'),
+  removeIdeaImage: (filename: string): Promise<void> => ipcRenderer.invoke('idea-image:remove', filename),
+
   platform: process.platform,
 };
 

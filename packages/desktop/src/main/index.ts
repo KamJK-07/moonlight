@@ -1,11 +1,30 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron';
-import { join } from 'path';
+import { app, shell, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
+import { join, extname } from 'path';
+import { randomUUID } from 'crypto';
 import { is } from '@electron-toolkit/utils';
 import type { WorklightState } from '@moonlight/core';
 import { AnthropicClient, AnthropicApiError, buildRiffPrompt } from '@moonlight/core';
 import { FileStorageAdapter, SafeStorageTokenStore } from './storage';
 
 const storageAdapter = new FileStorageAdapter();
+
+function imagesDir(): string {
+  return join(app.getPath('userData'), 'idea-images');
+}
+
+// Idea image attachments: files live under userData/idea-images, named
+// solely by a generated UUID + a whitelisted extension — never a path the
+// renderer supplies. The custom `moonlight-image://` scheme below is the
+// only way the renderer can read them back, and it re-validates every
+// filename against the same whitelist before touching the filesystem, so
+// there's no way for a crafted `moonlight-image://` URL to traverse out of
+// that directory.
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+const IMAGE_FILENAME_RE = new RegExp(`^[a-f0-9-]+\\.(${IMAGE_EXTENSIONS.join('|')})$`, 'i');
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'moonlight-image', privileges: { standard: false, secure: true, supportFetchAPI: true, bypassCSP: false, corsEnabled: false } },
+]);
 
 // Two independent secrets, two independent files — connecting/disconnecting
 // GitHub never touches the Anthropic key and vice versa.
@@ -121,7 +140,55 @@ ipcMain.handle('data:import', async (event) => {
   return { loaded: true as const, json };
 });
 
-void app.whenReady().then(() => {
+// ---------- IPC: idea image attachments ----------
+ipcMain.handle('idea-image:add', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options: Electron.OpenDialogOptions = {
+    title: 'Attach an image',
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: IMAGE_EXTENSIONS }],
+  };
+  const { canceled, filePaths } = win
+    ? await dialog.showOpenDialog(win, options)
+    : await dialog.showOpenDialog(options);
+  if (canceled || !filePaths[0]) return null;
+  const ext = extname(filePaths[0]).slice(1).toLowerCase();
+  if (!IMAGE_EXTENSIONS.includes(ext)) return null;
+  const filename = `${randomUUID()}.${ext}`;
+  const { promises: fs } = await import('fs');
+  await fs.mkdir(imagesDir(), { recursive: true });
+  await fs.copyFile(filePaths[0], join(imagesDir(), filename));
+  return filename;
+});
+
+ipcMain.handle('idea-image:remove', async (_event, filename: string) => {
+  if (!IMAGE_FILENAME_RE.test(filename)) return;
+  const { promises: fs } = await import('fs');
+  await fs.unlink(join(imagesDir(), filename)).catch(() => {});
+});
+
+void app.whenReady().then(async () => {
+  const { promises: fs } = await import('fs');
+  await fs.mkdir(imagesDir(), { recursive: true });
+
+  // Serves idea image attachments to the sandboxed renderer. The filename
+  // is re-validated against the same whitelist used to generate/remove
+  // images, so a crafted moonlight-image:// URL can never read anything
+  // outside imagesDir() — the renderer never gets a raw filesystem path.
+  protocol.handle('moonlight-image', async (request) => {
+    const url = new URL(request.url);
+    const filename = decodeURIComponent(url.hostname || url.pathname.replace(/^\/+/, ''));
+    if (!IMAGE_FILENAME_RE.test(filename)) {
+      return new Response('Invalid filename', { status: 400 });
+    }
+    try {
+      const data = await fs.readFile(join(imagesDir(), filename));
+      return new Response(data);
+    } catch {
+      return new Response('Not found', { status: 404 });
+    }
+  });
+
   createWindow();
 
   app.on('activate', () => {
