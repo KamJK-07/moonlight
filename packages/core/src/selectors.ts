@@ -165,3 +165,10 @@ export function tasksCompletedByWeek(
   }
   return buckets;
 }
+
+/** Every non-archived project's Markdown (see projectToMarkdown), concatenated into one document. */
+export function projectsPortfolioToMarkdown(projects: Project[], tasks: Task[], logEntries: LogEntry[]): string {
+  const active = projects.filter((p) => !p.archived);
+  if (active.length === 0) return '# Projects\n\nNo active projects yet.\n';
+  return active.map((p) => projectToMarkdown(p, tasks, logEntries)).join('\n---\n\n');
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { serializeState, deserializeState, InvalidStateError, planSync, summarizeSyncDiff } from '@moonlight/core';
+import { serializeState, deserializeState, InvalidStateError, planSync, summarizeSyncDiff, projectsPortfolioToMarkdown } from '@moonlight/core';
 import type { ThemeMode, AccentTheme, TextScale, WorklightState } from '@moonlight/core';
 import { useWorklight, useAnthropicSecrets } from '../store/WorklightContext';
 import { useGithub } from '../store/useGithub';
@@ -77,6 +77,12 @@ export default function SettingsScreen(): React.ReactElement {
 
   async function exportData() {
     const result = await window.moonlight.exportData(serializeState(state));
+    setImportStatus(result.saved ? `Exported to ${result.filePath}` : null);
+  }
+
+  async function exportAllProjectsMarkdown() {
+    const md = projectsPortfolioToMarkdown(state.projects, state.tasks, state.logEntries);
+    const result = await window.moonlight.exportMarkdown('moonlight-projects', md);
     setImportStatus(result.saved ? `Exported to ${result.filePath}` : null);
   }
 
@@ -221,10 +227,18 @@ export default function SettingsScreen(): React.ReactElement {
             </label>
           </div>
         )}
-        <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)', marginTop: '0.6rem', marginBottom: 0 }}>
+        <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)', marginTop: '0.6rem', marginBottom: state.settings.remindersEnabled ? '0.6rem' : 0 }}>
           Tasks with a due date remind at 9am on the day they&rsquo;re due. Notifications only fire while
           Moonlight is running.
         </p>
+        {state.settings.remindersEnabled && (
+          <button
+            className="btn-plain"
+            onClick={() => new Notification('Moonlight', { body: 'This is a test reminder notification.' })}
+          >
+            Send test notification
+          </button>
+        )}
       </div>
 
       <div className="card">
@@ -270,6 +284,9 @@ export default function SettingsScreen(): React.ReactElement {
         <div className="form-row" style={{ marginBottom: 0 }}>
           <button onClick={() => void exportData()}>Export backup…</button>
           <button onClick={() => void importData()}>Import backup…</button>
+          <button className="btn-plain" onClick={() => void exportAllProjectsMarkdown()}>
+            Export all projects as Markdown…
+          </button>
         </div>
         {importStatus && <p style={{ fontSize: '0.8rem', color: 'var(--ink-faint)' }}>{importStatus}</p>}
       </div>
