@@ -151,9 +151,12 @@ button {
   background: var(--surface);
   border-radius: var(--radius);
   padding: 0.5rem 0.8rem;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease, transform 0.1s ease;
 }
 button:hover { border-color: var(--ink-faint); }
+button:active { transform: scale(0.97); }
 button:disabled { opacity: 0.55; cursor: default; }
+button:disabled:active { transform: none; }
 .btn-accent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .btn-plain { border-color: transparent; background: transparent; padding: 0.35rem 0.5rem; }
 .btn-plain:hover { background: var(--surface-2); border-color: var(--border); }
@@ -212,9 +215,16 @@ button:disabled { opacity: 0.55; cursor: default; }
 }
 .settings-gear:hover { background: var(--surface-2); border-color: var(--border); }
 
+@keyframes popout-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popout-card-in { from { opacity: 0; transform: scale(0.97) translateY(4px); } to { opacity: 1; transform: none; } }
+
 .settings-popout-backdrop {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45);
   display: flex; align-items: center; justify-content: center; z-index: 300;
+  animation: popout-backdrop-in 0.12s ease;
+}
+.settings-popout, .search-popout {
+  animation: popout-card-in 0.14s ease;
 }
 .settings-popout {
   position: relative; width: min(640px, 90vw); max-height: 82vh; overflow-y: auto;
@@ -253,6 +263,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 .map-overlay {
   position: fixed; inset: 0; z-index: 400; background: var(--bg);
   display: flex; flex-direction: column;
+  animation: popout-backdrop-in 0.12s ease;
 }
 .map-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -398,6 +409,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 .image-preview-backdrop {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: 500;
   display: flex; align-items: center; justify-content: center; padding: 3rem;
+  animation: popout-backdrop-in 0.12s ease;
 }
 .image-preview-full { max-width: 100%; max-height: 100%; border-radius: var(--radius-lg); object-fit: contain; }
 .image-preview-close {

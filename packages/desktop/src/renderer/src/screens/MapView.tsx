@@ -198,37 +198,72 @@ export default function MapView({
     };
   }
 
+  // pan/zoom mirrored into refs so the pointermove listener below can read
+  // live values without re-registering itself on every pan tick — that
+  // used to add/remove a window listener on every single drag frame.
+  const panRef = useRef(pan);
+  const zoomRef = useRef(zoom);
   useEffect(() => {
-    function onMove(e: PointerEvent): void {
+    panRef.current = pan;
+  }, [pan]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    let rafId: number | null = null;
+    let pendingEvent: PointerEvent | null = null;
+
+    function apply(e: PointerEvent): void {
       const drag = dragRef.current;
       if (!drag) return;
-      const dx = e.clientX - drag.startClient.x;
-      const dy = e.clientY - drag.startClient.y;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
       if (drag.kind === 'pan') {
         const startPt = toGraphPoint(drag.startClient.x, drag.startClient.y);
         const nowPt = toGraphPoint(e.clientX, e.clientY);
         setPan({ x: drag.startPan.x + (nowPt.x - startPt.x), y: drag.startPan.y + (nowPt.y - startPt.y) });
       } else {
         const graphPt = toGraphPoint(e.clientX, e.clientY);
-        const under = { x: (graphPt.x - pan.x) / zoom, y: (graphPt.y - pan.y) / zoom };
+        const under = { x: (graphPt.x - panRef.current.x) / zoomRef.current, y: (graphPt.y - panRef.current.y) / zoomRef.current };
         setPositions((prev) => ({
           ...prev,
           [drag.id]: { x: under.x - drag.offset.x, y: under.y - drag.offset.y },
         }));
       }
     }
+
+    function onMove(e: PointerEvent): void {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dx = e.clientX - drag.startClient.x;
+      const dy = e.clientY - drag.startClient.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+      // Coalesce to one state update per animation frame — a fast mouse can
+      // fire pointermove far faster than the screen repaints, and every
+      // extra update in between is a wasted React render.
+      pendingEvent = e;
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          if (pendingEvent) apply(pendingEvent);
+        });
+      }
+    }
     function onUp(): void {
       dragRef.current = null;
+      pendingEvent = null;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
     }
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pan, zoom]);
+  }, []);
 
   useEffect(() => {
     const svg = svgRef.current;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 import { WorklightStore, createInitialState, type WorklightState } from '@moonlight/core';
 import { IpcStorageAdapter, IpcSecretStore } from './ipcAdapters';
 
@@ -64,10 +64,4 @@ export function useGithubSecrets(): IpcSecretStore {
 
 export function useAnthropicSecrets(): IpcSecretStore {
   return useWorklightContext().anthropicSecrets;
-}
-
-/** Convenience: memoize a derived value off the live state without recomputing every render. */
-export function useDerived<T>(compute: () => T, deps: React.DependencyList): T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(compute, deps);
 }
