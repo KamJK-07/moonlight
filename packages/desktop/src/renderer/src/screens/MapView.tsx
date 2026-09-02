@@ -84,7 +84,9 @@ function simulate(nodes: GraphNode[], edges: GraphEdge[]): void {
   const vy = new Array(n).fill(0);
   const cx = WIDTH / 2;
   const cy = HEIGHT / 2;
-  const iterations = 160;
+  // The repulsion pass is O(n^2) per iteration; taper iteration count as the
+  // graph grows so a few hundred tasks can't turn this into a multi-second stall.
+  const iterations = n > 400 ? 25 : n > 150 ? 60 : 160;
 
   for (let iter = 0; iter < iterations; iter++) {
     for (let i = 0; i < n; i++) {

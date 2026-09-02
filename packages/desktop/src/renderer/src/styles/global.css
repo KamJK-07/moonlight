@@ -26,13 +26,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #131c18;
-    --surface: #1b2620;
-    --surface-2: #20302a;
-    --border: #31443b;
-    --ink: #e9efe9;
-    --ink-soft: #a6b4a9;
-    --ink-faint: #6e7e72;
+    --bg: #17181a;
+    --surface: #1e1f22;
+    --surface-2: #27282c;
+    --border: #38393e;
+    --ink: #ececee;
+    --ink-soft: #a9aaae;
+    --ink-faint: #737479;
     --accent: #f0a24e;
     --accent-ink: #1e1000;
     --accent-soft: #3a2a12;

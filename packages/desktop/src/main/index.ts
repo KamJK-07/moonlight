@@ -23,7 +23,7 @@ function createWindow(): void {
     minHeight: 560,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#131C18', // matches the dark-theme --bg token; avoids a white flash on launch
+    backgroundColor: '#17181A', // matches the dark-theme --bg token; avoids a white flash on launch
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
